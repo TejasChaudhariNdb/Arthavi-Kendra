@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
 
 export default function DashboardLayout({
@@ -9,7 +10,14 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+
+  if (pathname === "/login") {
+    return (
+      <main className="min-h-screen bg-gray-950 text-gray-100">{children}</main>
+    );
+  }
 
   return (
     <div className="flex bg-gray-950 min-h-screen text-gray-100 relative isolate">
