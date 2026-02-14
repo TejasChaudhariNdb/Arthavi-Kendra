@@ -8,6 +8,7 @@ import {
   Settings,
   LineChart,
   MessageSquare,
+  Database,
   X,
 } from "lucide-react";
 import { clsx } from "clsx";
@@ -18,6 +19,7 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
   const links = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/users", label: "Users", icon: Users },
+    { href: "/master-data", label: "Master Data", icon: Database },
     { href: "/chats", label: "AI Chats", icon: MessageSquare },
     { href: "/analytics", label: "Analytics", icon: LineChart },
     { href: "/settings", label: "Settings", icon: Settings },

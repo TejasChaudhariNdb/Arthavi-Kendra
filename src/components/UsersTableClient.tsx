@@ -2,7 +2,15 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Search, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import {
+  Search,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
+  ExternalLink,
+  MoreVertical,
+} from "lucide-react";
+import { impersonateUser } from "@/lib/auth-client";
 
 interface User {
   id: number;
@@ -20,14 +28,75 @@ interface UsersTableClientProps {
 type SortKey = keyof User;
 type SortDirection = "asc" | "desc";
 
+interface SortConfig {
+  key: SortKey;
+  direction: SortDirection;
+}
+
+const ActionMenu = ({
+  user,
+  onImpersonate,
+}: {
+  user: User;
+  onImpersonate: (id: number) => void;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors">
+        <MoreVertical size={16} />
+      </button>
+
+      {isOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-10 cursor-default"
+            onClick={() => setIsOpen(false)}></div>
+          <div className="absolute right-0 mt-1 w-48 bg-gray-950 border border-gray-800 rounded-lg shadow-xl z-20 py-1 overflow-hidden">
+            <Link
+              href={`/users/${user.id}`}
+              className="block px-4 py-3 hover:bg-gray-800 text-sm text-gray-300 transition-colors">
+              View Details
+            </Link>
+            <button
+              onClick={() => {
+                onImpersonate(user.id);
+                setIsOpen(false);
+              }}
+              className="w-full text-left px-4 py-3 hover:bg-gray-800 text-sm text-purple-400 font-medium transition-colors flex items-center gap-2">
+              <ExternalLink size={14} /> Login as User
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+const SortIcon = ({
+  sortConfig,
+  columnKey,
+}: {
+  sortConfig: SortConfig | null;
+  columnKey: SortKey;
+}) => {
+  if (sortConfig?.key !== columnKey)
+    return <ChevronsUpDown size={14} className="text-gray-600" />;
+  return sortConfig.direction === "asc" ? (
+    <ChevronUp size={14} className="text-emerald-500" />
+  ) : (
+    <ChevronDown size={14} className="text-emerald-500" />
+  );
+};
+
 export default function UsersTableClient({
   initialUsers,
 }: UsersTableClientProps) {
   const [search, setSearch] = useState("");
-  const [sortConfig, setSortConfig] = useState<{
-    key: SortKey;
-    direction: SortDirection;
-  } | null>(null);
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
 
   const handleSort = (key: SortKey) => {
     let direction: SortDirection = "asc";
@@ -39,6 +108,20 @@ export default function UsersTableClient({
       direction = "desc";
     }
     setSortConfig({ key, direction });
+  };
+
+  const handleImpersonate = async (userId: number) => {
+    try {
+      const data = await impersonateUser(userId);
+      if (data.access_token) {
+        const userAppUrl =
+          process.env.NEXT_PUBLIC_USER_APP_URL || "http://localhost:3000";
+        const url = `${userAppUrl}/login?impersonate_token=${data.access_token}`;
+        window.open(url, "_blank");
+      }
+    } catch (_) {
+      alert("Failed to generate impersonation token.");
+    }
   };
 
   const filteredUsers = useMemo(() => {
@@ -73,16 +156,6 @@ export default function UsersTableClient({
     return result;
   }, [initialUsers, search, sortConfig]);
 
-  const SortIcon = ({ columnKey }: { columnKey: SortKey }) => {
-    if (sortConfig?.key !== columnKey)
-      return <ChevronsUpDown size={14} className="text-gray-600" />;
-    return sortConfig.direction === "asc" ? (
-      <ChevronUp size={14} className="text-emerald-500" />
-    ) : (
-      <ChevronDown size={14} className="text-emerald-500" />
-    );
-  };
-
   return (
     <div className="space-y-4">
       {/* Search Bar */}
@@ -109,35 +182,42 @@ export default function UsersTableClient({
                   className="px-6 py-4 whitespace-nowrap cursor-pointer hover:bg-gray-900 transition-colors group"
                   onClick={() => handleSort("full_name")}>
                   <div className="flex items-center gap-2">
-                    Name <SortIcon columnKey="full_name" />
+                    Name{" "}
+                    <SortIcon sortConfig={sortConfig} columnKey="full_name" />
                   </div>
                 </th>
                 <th
                   className="px-6 py-4 whitespace-nowrap cursor-pointer hover:bg-gray-900 transition-colors group"
                   onClick={() => handleSort("email")}>
                   <div className="flex items-center gap-2">
-                    Email <SortIcon columnKey="email" />
+                    Email <SortIcon sortConfig={sortConfig} columnKey="email" />
                   </div>
                 </th>
                 <th
                   className="px-6 py-4 whitespace-nowrap cursor-pointer hover:bg-gray-900 transition-colors group"
                   onClick={() => handleSort("created_at")}>
                   <div className="flex items-center gap-2">
-                    Joined <SortIcon columnKey="created_at" />
+                    Joined{" "}
+                    <SortIcon sortConfig={sortConfig} columnKey="created_at" />
                   </div>
                 </th>
                 <th
                   className="px-6 py-4 text-center whitespace-nowrap cursor-pointer hover:bg-gray-900 transition-colors group"
                   onClick={() => handleSort("portfolio_count")}>
                   <div className="flex items-center justify-center gap-2">
-                    Portfolios <SortIcon columnKey="portfolio_count" />
+                    Portfolios{" "}
+                    <SortIcon
+                      sortConfig={sortConfig}
+                      columnKey="portfolio_count"
+                    />
                   </div>
                 </th>
                 <th
                   className="px-6 py-4 text-right whitespace-nowrap cursor-pointer hover:bg-gray-900 transition-colors group"
                   onClick={() => handleSort("total_value")}>
                   <div className="flex items-center justify-end gap-2">
-                    Total Value <SortIcon columnKey="total_value" />
+                    Total Value{" "}
+                    <SortIcon sortConfig={sortConfig} columnKey="total_value" />
                   </div>
                 </th>
                 <th className="px-6 py-4 whitespace-nowrap">Actions</th>
@@ -157,7 +237,11 @@ export default function UsersTableClient({
                   </td>
                   <td className="px-6 py-4 text-center whitespace-nowrap">
                     <span
-                      className={`px-2 py-1 rounded text-xs font-bold ${user.portfolio_count > 0 ? "bg-blue-900 text-blue-300" : "bg-gray-800 text-gray-500"}`}>
+                      className={`px-2 py-1 rounded text-xs font-bold ${
+                        user.portfolio_count > 0
+                          ? "bg-blue-900 text-blue-300"
+                          : "bg-gray-800 text-gray-500"
+                      }`}>
                       {user.portfolio_count}
                     </span>
                   </td>
@@ -166,12 +250,9 @@ export default function UsersTableClient({
                       ? `₹${user.total_value.toLocaleString()}`
                       : "-"}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <Link
-                      href={`/users/${user.id}`}
-                      className="text-indigo-400 hover:text-indigo-300 font-medium hover:underline">
-                      View Details
-                    </Link>
+
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <ActionMenu user={user} onImpersonate={handleImpersonate} />
                   </td>
                 </tr>
               ))}

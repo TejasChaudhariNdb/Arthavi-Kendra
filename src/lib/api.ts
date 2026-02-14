@@ -21,6 +21,27 @@ export async function fetchAdminProfile() {
   return res.json();
 }
 
+export async function fetchStocks(page = 1, limit = 50, search = "") {
+  const headers = await getHeaders();
+  const skip = (page - 1) * limit;
+  const res = await fetch(
+    `${API_URL}/admin/stocks/?skip=${skip}&limit=${limit}&search=${search}`,
+    { headers, cache: "no-store" },
+  );
+  if (!res.ok) throw new Error("Failed to fetch stocks");
+  return res.json();
+}
+
+export async function fetchRefreshStatus() {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/stocks/refresh-status`, {
+    headers,
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed");
+  return res.json();
+}
+
 export async function fetchStats() {
   const headers = await getHeaders();
   const res = await fetch(`${API_URL}/admin/stats`, {

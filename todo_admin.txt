@@ -1,0 +1,60 @@
+Based on the current architecture of Arthavi (a Fintech Portfolio Tracker + AI Chat), here is a breakdown of the critical missing features in your Admin Dashboard.
+
+I have categorized these by Operational Priority (User Support, Data Integrity, System Health).
+
+1. User Support & Operations (CRM)
+Current State: You can view users, but cannot interact with them.
+
+User Actions:
+Ban/Suspend User: Critical for security or stopping abusive API usage.
+Force Password Reset: Essential for handling "I forgot my password" support tickets.
+Delete Account: Requirement for data privacy compliance (GDPR/DPDP).
+Communications:
+Notification System: Ability to send a system alert (e.g., "Maintenance at 2 AM" or "Your CAS import failed") to a specific user or all users.
+Debug Mode:
+Impersonation: "View as User" feature. Allows the admin to see exactly what the user sees to debug UI issues.
+2. Data Integrity & Portfolio Ops
+Current State: Read-only views of portfolios. No control over the engine.
+
+CAS/File Parser Logs:
+This is the #1 pain point in fintech. You need a dedicated view to see failed imports. Why did User X's PDF fail? (Password wrong? Unknown format?).
+Master Data Management:
+Stock/MF Correction: If a stock price is incorrect or multiple schemes are duplicated, an admin should be able to manually edit or merge entries in the 
+StockMaster
+ or 
+Scheme
+ tables.
+Price Refresh Monitor:
+A dashboard showing the status of your CRON jobs. Did the daily Nifty 50 price update run? If it failed, you need a "Retry Now" button.
+3. AI Copilot Management
+Current State: View chat history.
+
+Feedback Loop:
+Ability to Rate/Flag AI responses. If the AI gives bad financial advice, you need to mark it so you can tune the model later.
+System Prompt Config:
+Instead of hardcoding the prompt in Python, add a settings field to update the System Prompt dynamically (e.g., "Be more conservative" vs "Be more aggressive").
+4. Admin Security & Roles
+Current State: Single "Admin" role.
+
+Audit Logs:
+"Who deleted User X?" You need a log of every action taken by an admin for security audits.
+Role-Based Access Control (RBAC):
+Super Admin: Can create/delete admins.
+Support Agent: Can view users but cannot see sensitive PII (PAN/Phone) or delete data.
+5. Advanced Analytics (Business Intel)
+Current State: Basic counters (Users, AUM).
+
+User Retention (Cohort Analysis):
+How many users who signed up last month are still active today?
+Demographics:
+Breakdown of users by Portfolio Size (e.g., Minnows vs Whales) or Asset Allocation (Equity heavy vs MF heavy).
+Top Held Assets:
+"What is the most popular stock among Arthavi users?" (e.g., 40% hold Reliance). Great for marketing checks.
+Recommended Roadmap (Next Steps)
+If I were prioritizing, I would build them in this order:
+
+Server Logs / Parser Debugger (Critical for stability).
+User Ban/Delete Actions (Critical for control).
+Global Notification System (Critical for communication).
+RBAC / Audit Logs (Security).
+Which area would you like to tackle next
