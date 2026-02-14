@@ -11,6 +11,16 @@ async function getHeaders() {
   };
 }
 
+export async function fetchAdminProfile() {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/auth/me`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch profile");
+  return res.json();
+}
+
 export async function fetchStats() {
   const headers = await getHeaders();
   const res = await fetch(`${API_URL}/admin/stats`, {
