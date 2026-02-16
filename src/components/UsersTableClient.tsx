@@ -233,7 +233,7 @@ export default function UsersTableClient({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">{user.email}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {new Date(user.created_at).toLocaleDateString()}
+                    {user.created_at}
                   </td>
                   <td className="px-6 py-4 text-center whitespace-nowrap">
                     <span

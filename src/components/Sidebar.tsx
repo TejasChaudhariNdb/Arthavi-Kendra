@@ -10,6 +10,7 @@ import {
   MessageSquare,
   Database,
   X,
+  Gift,
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -19,6 +20,7 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
   const links = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/users", label: "Users", icon: Users },
+    { href: "/referrals", label: "Referrals", icon: Gift },
     { href: "/master-data", label: "Master Data", icon: Database },
     { href: "/chats", label: "AI Chats", icon: MessageSquare },
     { href: "/analytics", label: "Analytics", icon: LineChart },

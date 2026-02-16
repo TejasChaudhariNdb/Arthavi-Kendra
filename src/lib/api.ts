@@ -98,3 +98,13 @@ export async function fetchChats(skip = 0, limit = 50) {
   if (!res.ok) throw new Error("Failed to fetch chats");
   return res.json();
 }
+
+export async function fetchReferrals() {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/referrals`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch referral stats");
+  return res.json();
+}
