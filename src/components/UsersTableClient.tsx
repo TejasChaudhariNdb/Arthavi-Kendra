@@ -9,6 +9,8 @@ import {
   ChevronsUpDown,
   ExternalLink,
   MoreVertical,
+  Bell,
+  BellOff,
 } from "lucide-react";
 import { impersonateUser } from "@/lib/auth-client";
 
@@ -19,6 +21,7 @@ interface User {
   created_at: string;
   portfolio_count: number;
   total_value: number;
+  notifications_enabled: boolean;
 }
 
 interface UsersTableClientProps {
@@ -178,6 +181,9 @@ export default function UsersTableClient({
           <table className="w-full text-left text-sm text-gray-400">
             <thead className="bg-gray-950 text-gray-200 uppercase font-medium">
               <tr>
+                <th className="px-4 py-4 whitespace-nowrap text-gray-500 text-xs">
+                  #ID
+                </th>
                 <th
                   className="px-6 py-4 whitespace-nowrap cursor-pointer hover:bg-gray-900 transition-colors group"
                   onClick={() => handleSort("full_name")}>
@@ -200,6 +206,9 @@ export default function UsersTableClient({
                     Joined{" "}
                     <SortIcon sortConfig={sortConfig} columnKey="created_at" />
                   </div>
+                </th>
+                <th className="px-6 py-4 text-center whitespace-nowrap">
+                  Notifications
                 </th>
                 <th
                   className="px-6 py-4 text-center whitespace-nowrap cursor-pointer hover:bg-gray-900 transition-colors group"
@@ -228,13 +237,35 @@ export default function UsersTableClient({
                 <tr
                   key={user.id}
                   className="hover:bg-gray-800/50 transition-colors">
+                  {/* ID */}
+                  <td className="px-4 py-4 whitespace-nowrap">
+                    <span className="font-mono text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded">
+                      #{user.id}
+                    </span>
+                  </td>
+                  {/* Name */}
                   <td className="px-6 py-4 font-medium text-white whitespace-nowrap">
                     {user.full_name || "N/A"}
                   </td>
+                  {/* Email */}
                   <td className="px-6 py-4 whitespace-nowrap">{user.email}</td>
+                  {/* Joined */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     {user.created_at}
                   </td>
+                  {/* Notifications */}
+                  <td className="px-6 py-4 text-center whitespace-nowrap">
+                    {user.notifications_enabled ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-900/40 text-emerald-400 border border-emerald-800">
+                        <Bell size={11} /> On
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-800 text-gray-500 border border-gray-700">
+                        <BellOff size={11} /> Off
+                      </span>
+                    )}
+                  </td>
+                  {/* Portfolios */}
                   <td className="px-6 py-4 text-center whitespace-nowrap">
                     <span
                       className={`px-2 py-1 rounded text-xs font-bold ${
@@ -245,12 +276,13 @@ export default function UsersTableClient({
                       {user.portfolio_count}
                     </span>
                   </td>
+                  {/* Total Value */}
                   <td className="px-6 py-4 text-right font-mono text-emerald-400 whitespace-nowrap">
                     {user.total_value > 0
                       ? `₹${user.total_value.toLocaleString()}`
                       : "-"}
                   </td>
-
+                  {/* Actions */}
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <ActionMenu user={user} onImpersonate={handleImpersonate} />
                   </td>

@@ -9,6 +9,7 @@ import {
   TrendingUp,
   MessageSquare,
   ArrowRight,
+  Bell,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -73,6 +74,13 @@ export default async function Dashboard() {
           label="Total AUM"
           value={`₹${(stats.totalAum / 10000000).toFixed(2)} Cr`}
           icon={DollarSign}
+        />
+        <StatsCard
+          label="Notifications Enabled"
+          value={stats.notificationsEnabled}
+          icon={Bell}
+          trend={`${((stats.notificationsEnabled / stats.totalUsers) * 100).toFixed(0)}% of users opted in`}
+          trendUp={stats.notificationsEnabled > 0}
         />
       </div>
 
