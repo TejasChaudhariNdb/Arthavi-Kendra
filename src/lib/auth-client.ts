@@ -83,3 +83,26 @@ export async function fetchRefreshStatusClient() {
   if (!res.ok) throw new Error("Failed");
   return res.json();
 }
+
+export async function sendNotification(data: {
+  title: string;
+  body: string;
+  send_to_all: boolean;
+  user_ids?: number[];
+  user_id?: number | null;
+}) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/notifications/send`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => null);
+    throw new Error(errorData?.detail || "Failed to send notification");
+  }
+  return res.json();
+}
