@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import {
   MessageSquare,
@@ -9,6 +9,7 @@ import {
   RefreshCw,
   Search,
   ExternalLink,
+  ChevronLeft,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
@@ -51,7 +52,7 @@ export default function ChatInbox({
 }: {
   initialSessions: ChatSession[];
 }) {
-  const [sessions, setSessions] = useState<ChatSession[]>(initialSessions);
+  const [sessions] = useState<ChatSession[]>(initialSessions);
   const [selected, setSelected] = useState<SessionDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -82,18 +83,16 @@ export default function ChatInbox({
     }
   }, []);
 
-  // Auto-select first session
-  useEffect(() => {
-    if (sessions.length > 0 && !selected) {
-      loadMessages(sessions[0].id);
-    }
-  }, [sessions, selected, loadMessages]);
-
   return (
-    <div className="flex h-[calc(100vh-120px)] gap-0 rounded-xl overflow-hidden border border-gray-800">
-      {/* LEFT PANEL — Session List */}
-      <div className="w-80 flex-shrink-0 bg-gray-950 border-r border-gray-800 flex flex-col">
-        {/* Search */}
+    <div className="flex h-[calc(100vh-120px)] rounded-xl overflow-hidden border border-gray-800">
+      {/* ── LEFT PANEL: Session list ── */}
+      {/* On mobile: visible only when no session selected */}
+      {/* On desktop: always visible as 320px sidebar */}
+      <div
+        className={`bg-gray-950 border-r border-gray-800 flex flex-col
+          ${selected ? "hidden md:flex" : "flex w-full"}
+          md:w-80 md:shrink-0`}>
+        {/* Search bar */}
         <div className="p-3 border-b border-gray-800">
           <div className="relative">
             <Search
@@ -110,7 +109,7 @@ export default function ChatInbox({
           </div>
         </div>
 
-        {/* Session list */}
+        {/* Session rows */}
         <div className="flex-1 overflow-y-auto divide-y divide-gray-800/50">
           {filtered.map((s) => {
             const isActive = selected?.session.id === s.id;
@@ -118,10 +117,10 @@ export default function ChatInbox({
               <button
                 key={s.id}
                 onClick={() => loadMessages(s.id)}
-                className={`w-full text-left p-4 transition-colors hover:bg-gray-900 ${
+                className={`w-full text-left p-4 transition-colors hover:bg-gray-900 border-l-2 ${
                   isActive
-                    ? "bg-emerald-900/20 border-l-2 border-emerald-500"
-                    : "border-l-2 border-transparent"
+                    ? "bg-emerald-900/20 border-emerald-500"
+                    : "border-transparent"
                 }`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
@@ -155,38 +154,54 @@ export default function ChatInbox({
         </div>
       </div>
 
-      {/* RIGHT PANEL — Conversation */}
-      <div className="flex-1 flex flex-col bg-gray-900 min-w-0">
+      {/* ── RIGHT PANEL: Conversation viewer ── */}
+      {/* On mobile: visible only when a session is selected */}
+      {/* On desktop: always visible, fills remaining space */}
+      <div
+        className={`flex-1 flex flex-col bg-gray-900 min-w-0
+          ${selected ? "flex w-full" : "hidden md:flex"}`}>
         {loading ? (
           <div className="flex-1 flex items-center justify-center">
             <RefreshCw className="animate-spin text-gray-500" size={24} />
           </div>
         ) : selected ? (
           <>
-            {/* Chat Header */}
-            <div className="px-6 py-4 border-b border-gray-800 bg-gray-950 flex items-center justify-between">
-              <div>
-                <h2 className="text-white font-semibold text-base">
-                  {selected.session.title || "Untitled Session"}
-                </h2>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs text-emerald-400 font-medium">
-                    {selected.session.user.name || selected.session.user.email}
-                  </span>
-                  <span className="text-gray-600 text-xs">•</span>
-                  <span className="text-xs text-gray-500">
-                    {selected.session.updated_at}
-                  </span>
-                  <span className="text-gray-600 text-xs">•</span>
-                  <span className="text-xs text-gray-500">
-                    {selected.messages.length} messages
-                  </span>
+            {/* Header */}
+            <div className="px-4 py-3 border-b border-gray-800 bg-gray-950 flex items-center justify-between gap-2 shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                {/* Back button — mobile only */}
+                <button
+                  onClick={() => setSelected(null)}
+                  className="md:hidden p-1.5 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors shrink-0">
+                  <ChevronLeft size={18} />
+                </button>
+                <div className="min-w-0">
+                  <h2 className="text-white font-semibold text-sm truncate">
+                    {selected.session.title || "Untitled Session"}
+                  </h2>
+                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    <span className="text-xs text-emerald-400 font-medium">
+                      {selected.session.user.name ||
+                        selected.session.user.email}
+                    </span>
+                    <span className="text-gray-600 text-xs hidden sm:inline">
+                      •
+                    </span>
+                    <span className="text-xs text-gray-500 hidden sm:inline">
+                      {selected.session.updated_at}
+                    </span>
+                    <span className="text-gray-600 text-xs">•</span>
+                    <span className="text-xs text-gray-500">
+                      {selected.messages.length} msgs
+                    </span>
+                  </div>
                 </div>
               </div>
               <Link
                 href={`/users/${selected.session.user.id}`}
-                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded-lg">
-                <ExternalLink size={12} /> View User
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded-lg shrink-0 transition-colors">
+                <ExternalLink size={12} />
+                <span className="hidden sm:inline">View User</span>
               </Link>
             </div>
 
@@ -195,24 +210,24 @@ export default function ChatInbox({
               {selected.messages.map((m, i) => (
                 <div
                   key={i}
-                  className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
+                  className={`flex gap-2 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
                   {/* Avatar */}
                   <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                    className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-1 ${
                       m.role === "user"
                         ? "bg-blue-900/50 text-blue-400"
                         : "bg-emerald-900/50 text-emerald-400"
                     }`}>
                     {m.role === "user" ? (
-                      <UserIcon size={14} />
+                      <UserIcon size={13} />
                     ) : (
-                      <Bot size={14} />
+                      <Bot size={13} />
                     )}
                   </div>
 
                   {/* Bubble */}
                   <div
-                    className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                    className={`max-w-[85%] md:max-w-[75%] rounded-2xl px-4 py-2.5 ${
                       m.role === "user"
                         ? "bg-blue-900/30 text-blue-100 rounded-tr-none"
                         : "bg-gray-800 text-gray-100 rounded-tl-none"
@@ -223,7 +238,7 @@ export default function ChatInbox({
                     <p
                       className={`text-[10px] mt-1 ${
                         m.role === "user"
-                          ? "text-blue-400/60 text-right"
+                          ? "text-blue-400/50 text-right"
                           : "text-gray-500"
                       }`}>
                       {m.created_at}
@@ -233,7 +248,7 @@ export default function ChatInbox({
               ))}
 
               {selected.messages.length === 0 && (
-                <div className="flex-1 flex items-center justify-center h-40 text-gray-600 text-sm">
+                <div className="flex items-center justify-center h-40 text-gray-600 text-sm">
                   No messages in this session.
                 </div>
               )}
