@@ -287,7 +287,7 @@ export default async function Dashboard() {
               <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-800 group-hover:border-emerald-500/30 group-hover:bg-gray-800 transition-all h-full flex flex-col">
                 <div className="flex justify-between items-start mb-2">
                   <span className="text-xs text-emerald-400 font-bold uppercase tracking-wider bg-emerald-900/20 px-2 py-1 rounded">
-                    {chat.user.name}
+                    {chat.user?.name || "Unknown User"}
                   </span>
                   <span className="text-[10px] text-gray-500">
                     {chat.updated_at}
