@@ -65,15 +65,78 @@ export async function fetchGrowthData() {
 
 export async function fetchUsers(skip = 0, limit = 50) {
   const headers = await getHeaders();
-  const res = await fetch(
-    `${API_URL}/admin/users?skip=${skip}&limit=${limit}`,
-    {
-      cache: "no-store",
-      headers,
-    },
-  );
+  const res = await fetch(`${API_URL}/admin/users?skip=${skip}&limit=${limit}`, {
+    cache: "no-store",
+    headers,
+  });
   if (!res.ok) throw new Error("Failed to fetch users");
   return res.json();
+}
+
+export async function fetchUsersWithFilters(params: {
+  skip?: number;
+  limit?: number;
+  search?: string;
+  notifications_enabled?: boolean;
+  has_portfolio?: boolean;
+  min_value?: number;
+  at_risk?: boolean;
+}) {
+  const headers = await getHeaders();
+  const qs = new URLSearchParams();
+  qs.set("skip", String(params.skip ?? 0));
+  qs.set("limit", String(params.limit ?? 50));
+  if (params.search) qs.set("search", params.search);
+  if (typeof params.notifications_enabled === "boolean") {
+    qs.set("notifications_enabled", String(params.notifications_enabled));
+  }
+  if (typeof params.has_portfolio === "boolean") {
+    qs.set("has_portfolio", String(params.has_portfolio));
+  }
+  if (typeof params.min_value === "number" && params.min_value > 0) {
+    qs.set("min_value", String(params.min_value));
+  }
+  if (typeof params.at_risk === "boolean") {
+    qs.set("at_risk", String(params.at_risk));
+  }
+
+  const res = await fetch(`${API_URL}/admin/users?${qs.toString()}`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch users");
+  return res.json();
+}
+
+export async function fetchUsersMeta(params: {
+  search?: string;
+  notifications_enabled?: boolean;
+  has_portfolio?: boolean;
+  min_value?: number;
+  at_risk?: boolean;
+}) {
+  const headers = await getHeaders();
+  const qs = new URLSearchParams();
+  if (params.search) qs.set("search", params.search);
+  if (typeof params.notifications_enabled === "boolean") {
+    qs.set("notifications_enabled", String(params.notifications_enabled));
+  }
+  if (typeof params.has_portfolio === "boolean") {
+    qs.set("has_portfolio", String(params.has_portfolio));
+  }
+  if (typeof params.min_value === "number" && params.min_value > 0) {
+    qs.set("min_value", String(params.min_value));
+  }
+  if (typeof params.at_risk === "boolean") {
+    qs.set("at_risk", String(params.at_risk));
+  }
+
+  const res = await fetch(`${API_URL}/admin/users/meta?${qs.toString()}`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch users meta");
+  return res.json() as Promise<{ total: number; at_risk_count: number }>;
 }
 
 export async function fetchUserDetail(userId: string) {

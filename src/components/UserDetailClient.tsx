@@ -80,7 +80,11 @@ export default function UserDetailClient({ data }: { data: any }) {
             </h1>
             <p className="text-gray-400">
               {user.email} • Joined{" "}
-              {new Date(user.created_at).toLocaleDateString()}
+              {user.created_at
+                ? new Date(user.created_at).toLocaleDateString("en-IN", {
+                    timeZone: "Asia/Kolkata",
+                  })
+                : "N/A"}
             </p>
           </div>
         </div>

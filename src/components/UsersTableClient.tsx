@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Search,
   ChevronUp,
@@ -11,8 +12,9 @@ import {
   MoreVertical,
   Bell,
   BellOff,
+  Download,
 } from "lucide-react";
-import { impersonateUser } from "@/lib/auth-client";
+import { exportUsersCsv, impersonateUser } from "@/lib/auth-client";
 
 interface User {
   id: number;
@@ -26,6 +28,15 @@ interface User {
 
 interface UsersTableClientProps {
   initialUsers: User[];
+  totalFiltered: number;
+  atRiskCount: number;
+  initialFilters: {
+    q: string;
+    notifications: string;
+    portfolio: string;
+    minValue: string;
+    atRisk: boolean;
+  };
 }
 
 type SortKey = keyof User;
@@ -97,9 +108,25 @@ const SortIcon = ({
 
 export default function UsersTableClient({
   initialUsers,
+  totalFiltered,
+  atRiskCount,
+  initialFilters,
 }: UsersTableClientProps) {
-  const [search, setSearch] = useState("");
+  const router = useRouter();
+  const pathname = usePathname();
+  const [search, setSearch] = useState(initialFilters.q || "");
+  const [notificationsFilter, setNotificationsFilter] = useState(
+    initialFilters.notifications || "",
+  );
+  const [portfolioFilter, setPortfolioFilter] = useState(
+    initialFilters.portfolio || "",
+  );
+  const [minValueFilter, setMinValueFilter] = useState(
+    initialFilters.minValue || "",
+  );
+  const [atRiskOnly, setAtRiskOnly] = useState(initialFilters.atRisk || false);
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const handleSort = (key: SortKey) => {
     let direction: SortDirection = "asc";
@@ -122,23 +149,46 @@ export default function UsersTableClient({
         const url = `${userAppUrl}/login?impersonate_token=${data.access_token}`;
         window.open(url, "_blank");
       }
-    } catch (_) {
+    } catch (error) {
+      console.error("Impersonation failed", error);
       alert("Failed to generate impersonation token.");
     }
   };
 
-  const filteredUsers = useMemo(() => {
-    let result = [...initialUsers];
-
-    // Filter
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (u) =>
-          u.email.toLowerCase().includes(q) ||
-          (u.full_name && u.full_name.toLowerCase().includes(q)),
-      );
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await exportUsersCsv();
+    } catch (error) {
+      console.error("Users CSV export failed", error);
+      alert("Failed to export users CSV.");
+    } finally {
+      setExporting(false);
     }
+  };
+
+  const applyFilters = () => {
+    const params = new URLSearchParams();
+    params.set("page", "1");
+    if (search.trim()) params.set("q", search.trim());
+    if (notificationsFilter) params.set("notifications", notificationsFilter);
+    if (portfolioFilter) params.set("portfolio", portfolioFilter);
+    if (minValueFilter.trim()) params.set("min_value", minValueFilter.trim());
+    if (atRiskOnly) params.set("at_risk", "1");
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  const clearFilters = () => {
+    setSearch("");
+    setNotificationsFilter("");
+    setPortfolioFilter("");
+    setMinValueFilter("");
+    setAtRiskOnly(false);
+    router.push(`${pathname}?page=1`);
+  };
+
+  const filteredUsers = useMemo(() => {
+    const result = [...initialUsers];
 
     // Sort
     if (sortConfig) {
@@ -157,23 +207,98 @@ export default function UsersTableClient({
     }
 
     return result;
-  }, [initialUsers, search, sortConfig]);
+  }, [initialUsers, sortConfig]);
 
   return (
     <div className="space-y-4">
-      {/* Search Bar */}
-      <div className="relative">
-        <Search
-          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-          size={18}
-        />
-        <input
-          type="text"
-          placeholder="Search by name or email..."
-          className="w-full bg-gray-900 border border-gray-800 rounded-lg pl-10 pr-4 py-2 text-white focus:outline-none focus:border-emerald-500 transition-colors"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      {/* Search + Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
+        <div className="relative flex-1">
+          <Search
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+            size={18}
+          />
+          <input
+            type="text"
+            placeholder="Search by name or email..."
+            className="w-full bg-gray-900 border border-gray-800 rounded-lg pl-10 pr-4 py-2 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="lg:col-span-2">
+          <select
+            value={notificationsFilter}
+            onChange={(e) => setNotificationsFilter(e.target.value)}
+            className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 transition-colors">
+            <option value="">All Notifications</option>
+            <option value="on">Notifications On</option>
+            <option value="off">Notifications Off</option>
+          </select>
+        </div>
+        <div className="lg:col-span-2">
+          <select
+            value={portfolioFilter}
+            onChange={(e) => setPortfolioFilter(e.target.value)}
+            className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 transition-colors">
+            <option value="">All Portfolios</option>
+            <option value="yes">Has Portfolio</option>
+            <option value="no">No Portfolio</option>
+          </select>
+        </div>
+        <div className="lg:col-span-2">
+          <input
+            type="number"
+            min={0}
+            value={minValueFilter}
+            onChange={(e) => setMinValueFilter(e.target.value)}
+            placeholder="Min value (INR)"
+            className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+          />
+        </div>
+        <div className="lg:col-span-2 flex items-center gap-2">
+          <label className="inline-flex items-center gap-2 text-sm text-gray-300">
+            <input
+              type="checkbox"
+              checked={atRiskOnly}
+              onChange={(e) => setAtRiskOnly(e.target.checked)}
+              className="rounded border-gray-700 bg-gray-900 text-emerald-500 focus:ring-emerald-500"
+            />
+            At-Risk Only
+          </label>
+        </div>
+        <div className="lg:col-span-2 flex gap-2">
+          <button
+            onClick={applyFilters}
+            className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm transition-colors">
+            Apply
+          </button>
+          <button
+            onClick={clearFilters}
+            className="px-3 py-2 rounded-lg bg-gray-900 border border-gray-800 text-gray-300 hover:text-white hover:bg-gray-800 text-sm transition-colors">
+            Clear
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <div className="text-xs text-gray-400">
+          Filtered users: {totalFiltered}
+        </div>
+        <div className="text-xs text-amber-300">
+          At-risk users in result: {atRiskCount}
+        </div>
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-3 md:items-center">
+        <div className="flex-1" />
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gray-900 border border-gray-800 text-gray-300 hover:text-white hover:bg-gray-800 transition-colors disabled:opacity-60">
+          <Download size={16} />
+          {exporting ? "Exporting..." : "Export CSV"}
+        </button>
       </div>
 
       <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-sm">
@@ -298,7 +423,7 @@ export default function UsersTableClient({
         )}
       </div>
       <div className="text-gray-500 text-xs text-right mt-2">
-        Showing {filteredUsers.length} of {initialUsers.length} loaded users
+        Showing {filteredUsers.length} users on this page
       </div>
     </div>
   );

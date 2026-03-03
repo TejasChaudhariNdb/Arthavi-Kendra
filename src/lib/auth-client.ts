@@ -9,7 +9,10 @@ function getToken() {
   return "";
 }
 
-export async function loginAdmin(credentials: any) {
+export async function loginAdmin(credentials: {
+  username: string;
+  password: string;
+}) {
   const res = await fetch(`${API_URL}/admin/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -19,7 +22,11 @@ export async function loginAdmin(credentials: any) {
   return res.json();
 }
 
-export async function registerAdmin(data: any) {
+export async function registerAdmin(data: {
+  email: string;
+  password: string;
+  full_name: string;
+}) {
   const token = getToken();
   const res = await fetch(`${API_URL}/admin/auth/register`, {
     method: "POST",
@@ -46,7 +53,10 @@ export async function impersonateUser(userId: number) {
   return res.json();
 }
 
-export async function updateStock(symbol: string, updates: any) {
+export async function updateStock(
+  symbol: string,
+  updates: Record<string, unknown>,
+) {
   const token = getToken();
   const res = await fetch(`${API_URL}/admin/stocks/${symbol}`, {
     method: "PUT",
@@ -105,4 +115,24 @@ export async function sendNotification(data: {
     throw new Error(errorData?.detail || "Failed to send notification");
   }
   return res.json();
+}
+
+export async function exportUsersCsv() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/users/export`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) throw new Error("Failed to export users CSV");
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `users_export_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
 }

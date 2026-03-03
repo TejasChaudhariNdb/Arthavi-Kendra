@@ -41,10 +41,11 @@ const GrowthChart = ({ data }: { data: GrowthData[] }) => {
             axisLine={false}
             tickLine={false}
             tickFormatter={(str) => {
-              const date = new Date(str);
+              const date = new Date(`${str}T00:00:00+05:30`);
               return date.toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",
+                timeZone: "Asia/Kolkata",
               });
             }}
           />

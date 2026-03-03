@@ -1,4 +1,5 @@
 import { fetchAnalytics } from "@/lib/api";
+import Link from "next/link";
 import {
   BarChart3,
   Users,
@@ -10,11 +11,69 @@ import {
 
 export const dynamic = "force-dynamic";
 
+interface CountByLabel {
+  count: number;
+}
+
+interface SignupWeekday extends CountByLabel {
+  day: string;
+}
+
+interface SignupHour extends CountByLabel {
+  hour: string;
+}
+
+interface GrowthMonth extends CountByLabel {
+  month: string;
+}
+
+interface AnalyticsResponse {
+  signups_by_weekday: SignupWeekday[];
+  signups_by_hour: SignupHour[];
+  user_stats: {
+    total_users: number;
+    users_with_portfolios: number;
+    users_with_ai_chats: number;
+    activation_rate: number;
+  };
+  portfolio_stats: {
+    total_portfolios: number;
+    total_schemes: number;
+    total_equity_holdings: number;
+    avg_mf_value: number;
+    avg_equity_value: number;
+  };
+  ai_stats: {
+    total_sessions: number;
+    total_messages: number;
+    avg_messages_per_session: number;
+  };
+  recent_activity: {
+    new_users_7d: number;
+    new_portfolios_7d: number;
+    new_chats_7d: number;
+  };
+  previous_activity: {
+    new_users_7d: number;
+    new_portfolios_7d: number;
+    new_chats_7d: number;
+  };
+  kpi_deltas: {
+    activation_rate_pct: number;
+    new_users_7d_pct: number;
+    new_portfolios_7d_pct: number;
+    new_chats_7d_pct: number;
+    ai_usage_pct: number;
+  };
+  growth_by_month: GrowthMonth[];
+}
+
 export default async function AnalyticsPage() {
-  let data = null;
+  let data: AnalyticsResponse | null = null;
   try {
-    data = await fetchAnalytics();
-  } catch (e) {
+    data = (await fetchAnalytics()) as AnalyticsResponse;
+  } catch (error) {
+    console.error("Failed to load analytics", error);
     return (
       <div className="text-white p-4">
         Error loading analytics. Ensure backend is running.
@@ -29,16 +88,45 @@ export default async function AnalyticsPage() {
     portfolio_stats,
     ai_stats,
     recent_activity,
+    previous_activity,
+    kpi_deltas,
     growth_by_month,
   } = data;
 
   // Find peak signup day and hour
-  const peakDay = signups_by_weekday.reduce((max: any, item: any) =>
+  const peakDay = signups_by_weekday.reduce((max: SignupWeekday, item: SignupWeekday) =>
     item.count > max.count ? item : max,
   );
-  const peakHour = signups_by_hour.reduce((max: any, item: any) =>
+  const peakHour = signups_by_hour.reduce((max: SignupHour, item: SignupHour) =>
     item.count > max.count ? item : max,
   );
+
+  const deltaClass = (v: number) =>
+    v > 0 ? "text-emerald-400" : v < 0 ? "text-rose-400" : "text-gray-400";
+  const deltaArrow = (v: number) => (v > 0 ? "▲" : v < 0 ? "▼" : "•");
+
+  const funnel = [
+    { label: "Total Users", value: user_stats.total_users, href: "/users" },
+    {
+      label: "With Portfolio",
+      value: user_stats.users_with_portfolios,
+      href: "/users?portfolio=yes&page=1",
+    },
+    { label: "Using AI", value: user_stats.users_with_ai_chats, href: "/chats" },
+  ];
+
+  const dropoff12 =
+    funnel[0].value > 0
+      ? (((funnel[0].value - funnel[1].value) / funnel[0].value) * 100).toFixed(
+          1,
+        )
+      : "0.0";
+  const dropoff23 =
+    funnel[1].value > 0
+      ? (((funnel[1].value - funnel[2].value) / funnel[1].value) * 100).toFixed(
+          1,
+        )
+      : "0.0";
 
   return (
     <div className="space-y-8">
@@ -55,7 +143,9 @@ export default async function AnalyticsPage() {
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
+        <Link
+          href="/users"
+          className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md block hover:border-gray-700 transition-colors">
           <div className="flex items-center gap-3 mb-2">
             <Users className="text-blue-400" size={20} />
             <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide">
@@ -65,13 +155,19 @@ export default async function AnalyticsPage() {
           <p className="text-3xl font-bold text-white">
             {user_stats.activation_rate}%
           </p>
+          <p className={`text-xs mt-1 ${deltaClass(kpi_deltas.activation_rate_pct)}`}>
+            {deltaArrow(kpi_deltas.activation_rate_pct)}{" "}
+            {Math.abs(kpi_deltas.activation_rate_pct)}% vs prior period
+          </p>
           <p className="text-xs text-gray-500 mt-1">
             {user_stats.users_with_portfolios} / {user_stats.total_users} users
             have portfolios
           </p>
-        </div>
+        </Link>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
+        <Link
+          href="/users"
+          className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md block hover:border-gray-700 transition-colors">
           <div className="flex items-center gap-3 mb-2">
             <TrendingUp className="text-emerald-400" size={20} />
             <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide">
@@ -81,33 +177,71 @@ export default async function AnalyticsPage() {
           <p className="text-3xl font-bold text-white">
             {recent_activity.new_users_7d}
           </p>
-          <p className="text-xs text-gray-500 mt-1">Last 7 days</p>
-        </div>
+          <p className={`text-xs mt-1 ${deltaClass(kpi_deltas.new_users_7d_pct)}`}>
+            {deltaArrow(kpi_deltas.new_users_7d_pct)}{" "}
+            {Math.abs(kpi_deltas.new_users_7d_pct)}% vs previous 7d (
+            {previous_activity.new_users_7d})
+          </p>
+        </Link>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
+        <Link
+          href="/users?portfolio=yes&page=1"
+          className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md block hover:border-gray-700 transition-colors">
           <div className="flex items-center gap-3 mb-2">
             <BarChart3 className="text-purple-400" size={20} />
             <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide">
-              Avg MF Value
+              New Portfolios (7d)
             </h3>
           </div>
-          <p className="text-3xl font-bold text-white">
-            ₹{(portfolio_stats.avg_mf_value / 1000).toFixed(1)}K
+          <p className="text-3xl font-bold text-white">{recent_activity.new_portfolios_7d}</p>
+          <p
+            className={`text-xs mt-1 ${deltaClass(kpi_deltas.new_portfolios_7d_pct)}`}>
+            {deltaArrow(kpi_deltas.new_portfolios_7d_pct)}{" "}
+            {Math.abs(kpi_deltas.new_portfolios_7d_pct)}% vs previous 7d (
+            {previous_activity.new_portfolios_7d})
           </p>
-          <p className="text-xs text-gray-500 mt-1">Per portfolio</p>
-        </div>
+        </Link>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
+        <Link
+          href="/chats"
+          className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md block hover:border-gray-700 transition-colors">
           <div className="flex items-center gap-3 mb-2">
             <MessageSquare className="text-yellow-400" size={20} />
             <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide">
-              AI Usage
+              New Chats (7d)
             </h3>
           </div>
-          <p className="text-3xl font-bold text-white">
-            {ai_stats.avg_messages_per_session}
+          <p className="text-3xl font-bold text-white">{recent_activity.new_chats_7d}</p>
+          <p className={`text-xs mt-1 ${deltaClass(kpi_deltas.new_chats_7d_pct)}`}>
+            {deltaArrow(kpi_deltas.new_chats_7d_pct)}{" "}
+            {Math.abs(kpi_deltas.new_chats_7d_pct)}% vs previous 7d (
+            {previous_activity.new_chats_7d})
           </p>
-          <p className="text-xs text-gray-500 mt-1">Avg messages per session</p>
+        </Link>
+      </div>
+
+      {/* Conversion Funnel */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
+        <h3 className="text-xl font-semibold text-white mb-5">
+          Conversion Funnel
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {funnel.map((step, idx) => (
+            <Link
+              key={step.label}
+              href={step.href}
+              className="p-4 rounded-lg border border-gray-800 bg-gray-800/40 hover:border-gray-700 transition-colors block">
+              <p className="text-xs uppercase tracking-wide text-gray-500">
+                Step {idx + 1}
+              </p>
+              <p className="text-sm text-gray-300 mt-1">{step.label}</p>
+              <p className="text-2xl font-bold text-white mt-2">{step.value}</p>
+            </Link>
+          ))}
+        </div>
+        <div className="mt-4 text-sm text-gray-400 flex flex-wrap gap-6">
+          <span>Drop-off: Users → Portfolio = {dropoff12}%</span>
+          <span>Drop-off: Portfolio → AI = {dropoff23}%</span>
         </div>
       </div>
 
@@ -125,9 +259,9 @@ export default async function AnalyticsPage() {
             </span>
           </div>
           <div className="space-y-3">
-            {signups_by_weekday.map((item: any) => {
+            {signups_by_weekday.map((item: SignupWeekday) => {
               const maxCount = Math.max(
-                ...signups_by_weekday.map((i: any) => i.count),
+                ...signups_by_weekday.map((i: SignupWeekday) => i.count),
               );
               const percentage =
                 maxCount > 0 ? (item.count / maxCount) * 100 : 0;
@@ -166,10 +300,10 @@ export default async function AnalyticsPage() {
           </div>
           <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
             {signups_by_hour
-              .filter((item: any) => item.count > 0)
-              .map((item: any) => {
+              .filter((item: SignupHour) => item.count > 0)
+              .map((item: SignupHour) => {
                 const maxCount = Math.max(
-                  ...signups_by_hour.map((i: any) => i.count),
+                  ...signups_by_hour.map((i: SignupHour) => i.count),
                 );
                 const percentage =
                   maxCount > 0 ? (item.count / maxCount) * 100 : 0;
@@ -284,9 +418,9 @@ export default async function AnalyticsPage() {
             Monthly Growth (Last 6 Months)
           </h3>
           <div className="space-y-3">
-            {growth_by_month.map((item: any) => {
+            {growth_by_month.map((item: GrowthMonth) => {
               const maxCount = Math.max(
-                ...growth_by_month.map((i: any) => i.count),
+                ...growth_by_month.map((i: GrowthMonth) => i.count),
               );
               const percentage =
                 maxCount > 0 ? (item.count / maxCount) * 100 : 0;

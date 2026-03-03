@@ -20,6 +20,14 @@ export default async function SettingsPage() {
     );
   }
 
+  const joinedAt = profile?.created_at
+    ? new Date(profile.created_at).toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
+    : "N/A";
+
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-10">
       <div>
@@ -66,7 +74,7 @@ export default async function SettingsPage() {
             </div>
             <div className="text-white font-medium flex items-center gap-2 text-lg">
               <Calendar size={18} className="text-gray-400" />{" "}
-              {profile.created_at || "N/A"}
+              {joinedAt}
             </div>
           </div>
         </div>

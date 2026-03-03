@@ -1,13 +1,66 @@
-import { fetchUsers } from "@/lib/api";
+import { fetchUsersMeta, fetchUsersWithFilters } from "@/lib/api";
 import UsersTableClient from "@/components/UsersTableClient";
+import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export default async function UsersPage() {
+export default async function UsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    page?: string;
+    q?: string;
+    notifications?: string;
+    portfolio?: string;
+    min_value?: string;
+    at_risk?: string;
+  }>;
+}) {
+  const sp = await searchParams;
+  const page = Math.max(1, Number(sp.page || "1") || 1);
+  const q = (sp.q || "").trim();
+  const notifications =
+    sp.notifications === "on"
+      ? true
+      : sp.notifications === "off"
+        ? false
+        : undefined;
+  const hasPortfolio =
+    sp.portfolio === "yes"
+      ? true
+      : sp.portfolio === "no"
+        ? false
+        : undefined;
+  const minValue = Math.max(0, Number(sp.min_value || "0") || 0);
+  const atRisk = sp.at_risk === "1";
+  const PAGE_SIZE = 50;
+  const skip = (page - 1) * PAGE_SIZE;
+
   let users = [];
+  let total = 0;
+  let atRiskCount = 0;
   try {
-    users = await fetchUsers();
-  } catch (e) {
+    [users, { total, at_risk_count: atRiskCount }] = await Promise.all([
+      fetchUsersWithFilters({
+        skip,
+        limit: PAGE_SIZE,
+        search: q || undefined,
+        notifications_enabled: notifications,
+        has_portfolio: hasPortfolio,
+        min_value: minValue > 0 ? minValue : undefined,
+        at_risk: atRisk || undefined,
+      }),
+      fetchUsersMeta({
+        search: q || undefined,
+        notifications_enabled: notifications,
+        has_portfolio: hasPortfolio,
+        min_value: minValue > 0 ? minValue : undefined,
+        at_risk: atRisk || undefined,
+      }),
+    ]);
+  } catch (error) {
+    console.error("Failed to load users page", error);
     return (
       <div className="text-white p-4">
         Error loading users. Ensure backend is running.
@@ -15,16 +68,78 @@ export default async function UsersPage() {
     );
   }
 
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const start = total === 0 ? 0 : skip + 1;
+  const end = skip + users.length;
+
+  const buildUsersHref = (nextPage: number) => {
+    const params = new URLSearchParams();
+    params.set("page", String(nextPage));
+    if (q) params.set("q", q);
+    if (sp.notifications === "on" || sp.notifications === "off") {
+      params.set("notifications", sp.notifications);
+    }
+    if (sp.portfolio === "yes" || sp.portfolio === "no") {
+      params.set("portfolio", sp.portfolio);
+    }
+    if (minValue > 0) params.set("min_value", String(minValue));
+    if (atRisk) params.set("at_risk", "1");
+    return `/users?${params.toString()}`;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-white tracking-tight">Users</h1>
         <div className="text-gray-400">
-          Total: {users.length} (showing latest 50)
+          Showing {start}-{end} of {total} • Page {page}/{totalPages}
         </div>
       </div>
 
-      <UsersTableClient initialUsers={users} />
+      <UsersTableClient
+        initialUsers={users}
+        totalFiltered={total}
+        atRiskCount={atRiskCount}
+        initialFilters={{
+          q,
+          notifications:
+            sp.notifications === "on" || sp.notifications === "off"
+              ? sp.notifications
+              : "",
+          portfolio:
+            sp.portfolio === "yes" || sp.portfolio === "no" ? sp.portfolio : "",
+          minValue: minValue > 0 ? String(minValue) : "",
+          atRisk,
+        }}
+      />
+
+      <div className="flex items-center justify-between pt-2">
+        <Link
+          href={buildUsersHref(Math.max(1, page - 1))}
+          className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
+            page <= 1
+              ? "pointer-events-none border-gray-800 text-gray-600"
+              : "border-gray-800 text-gray-300 hover:text-white hover:bg-gray-900"
+          }`}>
+          <ChevronLeft size={16} />
+          Previous
+        </Link>
+
+        <span className="text-xs text-gray-500">
+          Page {page} of {totalPages} • Rows {users.length}
+        </span>
+
+        <Link
+          href={buildUsersHref(page + 1)}
+          className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
+            page >= totalPages
+              ? "pointer-events-none border-gray-800 text-gray-600"
+              : "border-gray-800 text-gray-300 hover:text-white hover:bg-gray-900"
+          }`}>
+          Next
+          <ChevronRight size={16} />
+        </Link>
+      </div>
     </div>
   );
 }
