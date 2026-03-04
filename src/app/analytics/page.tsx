@@ -27,9 +27,15 @@ interface GrowthMonth extends CountByLabel {
   month: string;
 }
 
+interface SignupSource extends CountByLabel {
+  source: string;
+  pct: number;
+}
+
 interface AnalyticsResponse {
   signups_by_weekday: SignupWeekday[];
   signups_by_hour: SignupHour[];
+  signups_by_source: SignupSource[];
   user_stats: {
     total_users: number;
     users_with_portfolios: number;
@@ -84,6 +90,7 @@ export default async function AnalyticsPage() {
   const {
     signups_by_weekday,
     signups_by_hour,
+    signups_by_source,
     user_stats,
     portfolio_stats,
     ai_stats,
@@ -330,6 +337,27 @@ export default async function AnalyticsPage() {
 
       {/* Additional Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Acquisition Source */}
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
+          <h3 className="text-xl font-semibold text-white mb-4">
+            Signup Source
+          </h3>
+          <div className="space-y-3">
+            {signups_by_source.map((item: SignupSource) => (
+              <div
+                key={item.source}
+                className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
+                <span className="text-sm text-gray-300 capitalize">
+                  {item.source}
+                </span>
+                <span className="text-white font-mono font-bold">
+                  {item.count} ({item.pct}%)
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* User Engagement */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
           <h3 className="text-xl font-semibold text-white mb-4">
