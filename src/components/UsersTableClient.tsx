@@ -21,6 +21,7 @@ interface User {
   email: string;
   full_name: string | null;
   created_at: string;
+  last_active_at: string | null;
   portfolio_count: number;
   total_value: number;
   notifications_enabled: boolean;
@@ -36,6 +37,9 @@ interface UsersTableClientProps {
     portfolio: string;
     minValue: string;
     atRisk: boolean;
+    active24: boolean;
+    sortBy: string;
+    sortOrder: string;
   };
 }
 
@@ -125,6 +129,9 @@ export default function UsersTableClient({
     initialFilters.minValue || "",
   );
   const [atRiskOnly, setAtRiskOnly] = useState(initialFilters.atRisk || false);
+  const [active24Only, setActive24Only] = useState(initialFilters.active24 || false);
+  const [sortBy, setSortBy] = useState(initialFilters.sortBy || "created_at");
+  const [sortOrder, setSortOrder] = useState(initialFilters.sortOrder || "desc");
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   const [exporting, setExporting] = useState(false);
 
@@ -175,6 +182,9 @@ export default function UsersTableClient({
     if (portfolioFilter) params.set("portfolio", portfolioFilter);
     if (minValueFilter.trim()) params.set("min_value", minValueFilter.trim());
     if (atRiskOnly) params.set("at_risk", "1");
+    if (active24Only) params.set("active_24", "1");
+    if (sortBy && sortBy !== "created_at") params.set("sort_by", sortBy);
+    if (sortOrder && sortOrder !== "desc") params.set("sort_order", sortOrder);
     router.push(`${pathname}?${params.toString()}`);
   };
 
@@ -184,6 +194,9 @@ export default function UsersTableClient({
     setPortfolioFilter("");
     setMinValueFilter("");
     setAtRiskOnly(false);
+    setActive24Only(false);
+    setSortBy("created_at");
+    setSortOrder("desc");
     router.push(`${pathname}?page=1`);
   };
 
@@ -267,6 +280,37 @@ export default function UsersTableClient({
             At-Risk Only
           </label>
         </div>
+        <div className="lg:col-span-2 flex items-center gap-2">
+          <label className="inline-flex items-center gap-2 text-sm text-gray-300">
+            <input
+              type="checkbox"
+              checked={active24Only}
+              onChange={(e) => setActive24Only(e.target.checked)}
+              className="rounded border-gray-700 bg-gray-900 text-emerald-500 focus:ring-emerald-500"
+            />
+            Active (24h)
+          </label>
+        </div>
+        <div className="lg:col-span-2">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 transition-colors">
+            <option value="created_at">Sort: Joined</option>
+            <option value="last_active_at">Sort: Last Active</option>
+            <option value="portfolio_count">Sort: Portfolios</option>
+            <option value="total_value">Sort: Total Value</option>
+          </select>
+        </div>
+        <div className="lg:col-span-2">
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+            className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 transition-colors">
+            <option value="desc">Order: Desc</option>
+            <option value="asc">Order: Asc</option>
+          </select>
+        </div>
         <div className="lg:col-span-2 flex gap-2">
           <button
             onClick={applyFilters}
@@ -332,6 +376,14 @@ export default function UsersTableClient({
                     <SortIcon sortConfig={sortConfig} columnKey="created_at" />
                   </div>
                 </th>
+                <th
+                  className="px-6 py-4 whitespace-nowrap cursor-pointer hover:bg-gray-900 transition-colors group"
+                  onClick={() => handleSort("last_active_at")}>
+                  <div className="flex items-center gap-2">
+                    Last Active{" "}
+                    <SortIcon sortConfig={sortConfig} columnKey="last_active_at" />
+                  </div>
+                </th>
                 <th className="px-6 py-4 text-center whitespace-nowrap">
                   Notifications
                 </th>
@@ -377,6 +429,10 @@ export default function UsersTableClient({
                   {/* Joined */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     {user.created_at}
+                  </td>
+                  {/* Last Active */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {user.last_active_at || "-"}
                   </td>
                   {/* Notifications */}
                   <td className="px-6 py-4 text-center whitespace-nowrap">

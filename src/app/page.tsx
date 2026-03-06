@@ -71,7 +71,12 @@ export default async function Dashboard() {
       ? [{ label: "Review new signup channels", href: "/analytics" }]
       : []),
     ...(dauPct < 10
-      ? [{ label: "Re-engage inactive users", href: "/notifications" }]
+      ? [
+          {
+            label: "Open active users (24h)",
+            href: "/users?active_24=1&sort_by=last_active_at&sort_order=desc",
+          },
+        ]
       : []),
     ...(recentChats.length > 0
       ? [{ label: "Scan latest AI chats for issues", href: "/chats" }]
@@ -125,6 +130,7 @@ export default async function Dashboard() {
           label="Total Portfolios"
           value={stats.totalPortfolios}
           icon={Briefcase}
+          trend={`MF: ${stats.totalMfPortfolios || 0} | Stocks: ${stats.totalEquityPortfolios || 0}`}
         />
         <StatsCard
           label="Total AUM"

@@ -81,6 +81,9 @@ export async function fetchUsersWithFilters(params: {
   has_portfolio?: boolean;
   min_value?: number;
   at_risk?: boolean;
+  active_within_hours?: number;
+  sort_by?: "created_at" | "last_active_at" | "portfolio_count" | "total_value";
+  sort_order?: "asc" | "desc";
 }) {
   const headers = await getHeaders();
   const qs = new URLSearchParams();
@@ -99,6 +102,11 @@ export async function fetchUsersWithFilters(params: {
   if (typeof params.at_risk === "boolean") {
     qs.set("at_risk", String(params.at_risk));
   }
+  if (typeof params.active_within_hours === "number" && params.active_within_hours > 0) {
+    qs.set("active_within_hours", String(params.active_within_hours));
+  }
+  if (params.sort_by) qs.set("sort_by", params.sort_by);
+  if (params.sort_order) qs.set("sort_order", params.sort_order);
 
   const res = await fetch(`${API_URL}/admin/users?${qs.toString()}`, {
     cache: "no-store",
@@ -114,6 +122,7 @@ export async function fetchUsersMeta(params: {
   has_portfolio?: boolean;
   min_value?: number;
   at_risk?: boolean;
+  active_within_hours?: number;
 }) {
   const headers = await getHeaders();
   const qs = new URLSearchParams();
@@ -129,6 +138,9 @@ export async function fetchUsersMeta(params: {
   }
   if (typeof params.at_risk === "boolean") {
     qs.set("at_risk", String(params.at_risk));
+  }
+  if (typeof params.active_within_hours === "number" && params.active_within_hours > 0) {
+    qs.set("active_within_hours", String(params.active_within_hours));
   }
 
   const res = await fetch(`${API_URL}/admin/users/meta?${qs.toString()}`, {

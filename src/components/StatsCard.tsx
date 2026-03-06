@@ -31,8 +31,15 @@ const StatsCard: React.FC<StatsCardProps> = ({
       </div>
       {trend && (
         <div
-          className={`text-xs font-semibold ${trendUp ? "text-emerald-500" : "text-rose-500"}`}>
-          {trend} {trendUp ? "▲" : "▼"}
+          className={`text-xs font-semibold ${
+            trendUp === undefined
+              ? "text-gray-400"
+              : trendUp
+                ? "text-emerald-500"
+                : "text-rose-500"
+          }`}>
+          {trend}
+          {trendUp === undefined ? "" : trendUp ? " ▲" : " ▼"}
         </div>
       )}
     </div>

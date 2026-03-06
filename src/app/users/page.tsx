@@ -15,6 +15,9 @@ export default async function UsersPage({
     portfolio?: string;
     min_value?: string;
     at_risk?: string;
+    active_24?: string;
+    sort_by?: string;
+    sort_order?: string;
   }>;
 }) {
   const sp = await searchParams;
@@ -34,6 +37,14 @@ export default async function UsersPage({
         : undefined;
   const minValue = Math.max(0, Number(sp.min_value || "0") || 0);
   const atRisk = sp.at_risk === "1";
+  const active24 = sp.active_24 === "1";
+  const sortBy =
+    sp.sort_by === "last_active_at" ||
+    sp.sort_by === "portfolio_count" ||
+    sp.sort_by === "total_value"
+      ? sp.sort_by
+      : "created_at";
+  const sortOrder = sp.sort_order === "asc" ? "asc" : "desc";
   const PAGE_SIZE = 50;
   const skip = (page - 1) * PAGE_SIZE;
 
@@ -50,6 +61,9 @@ export default async function UsersPage({
         has_portfolio: hasPortfolio,
         min_value: minValue > 0 ? minValue : undefined,
         at_risk: atRisk || undefined,
+        active_within_hours: active24 ? 24 : undefined,
+        sort_by: sortBy as "created_at" | "last_active_at" | "portfolio_count" | "total_value",
+        sort_order: sortOrder,
       }),
       fetchUsersMeta({
         search: q || undefined,
@@ -57,6 +71,7 @@ export default async function UsersPage({
         has_portfolio: hasPortfolio,
         min_value: minValue > 0 ? minValue : undefined,
         at_risk: atRisk || undefined,
+        active_within_hours: active24 ? 24 : undefined,
       }),
     ]);
   } catch (error) {
@@ -84,6 +99,9 @@ export default async function UsersPage({
     }
     if (minValue > 0) params.set("min_value", String(minValue));
     if (atRisk) params.set("at_risk", "1");
+    if (active24) params.set("active_24", "1");
+    if (sortBy !== "created_at") params.set("sort_by", sortBy);
+    if (sortOrder !== "desc") params.set("sort_order", sortOrder);
     return `/users?${params.toString()}`;
   };
 
@@ -110,6 +128,9 @@ export default async function UsersPage({
             sp.portfolio === "yes" || sp.portfolio === "no" ? sp.portfolio : "",
           minValue: minValue > 0 ? String(minValue) : "",
           atRisk,
+          active24,
+          sortBy,
+          sortOrder,
         }}
       />
 
