@@ -193,3 +193,16 @@ export async function fetchAnalytics() {
   if (!res.ok) throw new Error("Failed to fetch analytics");
   return res.json();
 }
+
+export async function fetchDonations(skip = 0, limit = 50) {
+  const headers = await getHeaders();
+  const res = await fetch(
+    `${API_URL}/admin/donations?skip=${skip}&limit=${limit}`,
+    {
+      cache: "no-store",
+      headers,
+    },
+  );
+  if (!res.ok) throw new Error("Failed to fetch donations");
+  return res.json();
+}

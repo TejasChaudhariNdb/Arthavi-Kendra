@@ -27,6 +27,7 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
     { href: "/chats", label: "AI Chats", icon: MessageSquare },
     { href: "/notifications", label: "Notifications", icon: Bell },
     { href: "/feedback", label: "Feedback", icon: MessageSquarePlus },
+    { href: "/donations", label: "Donations", icon: Gift },
     { href: "/analytics", label: "Analytics", icon: LineChart },
     { href: "/settings", label: "Settings", icon: Settings },
   ];
