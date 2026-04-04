@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { fetchStats, fetchGrowthData, fetchChats } from "@/lib/api";
 import StatsCard from "@/components/StatsCard";
 import GrowthChart from "@/components/GrowthChart";
@@ -15,10 +16,102 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-export default async function Dashboard() {
-  let stats,
-    growthData,
-    recentChats = [];
+function StatsSkeleton() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div
+          key={i}
+          className="bg-gray-900 border border-gray-800 rounded-xl p-6 h-[120px] animate-pulse"></div>
+      ))}
+    </div>
+  );
+}
+
+function ChartSkeleton() {
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl w-full h-[400px] animate-pulse"></div>
+  );
+}
+
+function SnapshotSkeleton() {
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 min-h-96 animate-pulse"></div>
+  );
+}
+
+function ChatsSkeleton() {
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md mt-8">
+      <div className="h-6 w-48 bg-gray-800 rounded animate-pulse mb-6"></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="h-32 bg-gray-800 rounded-lg animate-pulse"></div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+async function StatsSection() {
+  let stats;
+  try {
+    stats = await fetchStats();
+  } catch (e) {
+    return <div className="text-red-500">Failed to load stats.</div>;
+  }
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <StatsCard
+        label="Total Users"
+        value={stats.totalUsers}
+        icon={Users}
+        trend={`+${stats.newUsersToday} today`}
+        trendUp={stats.newUsersToday > 0}
+      />
+      <StatsCard
+        label="Daily Active Users"
+        value={stats.dau}
+        icon={Activity}
+        trend="Active in last 24h"
+        trendUp={true}
+      />
+      <StatsCard
+        label="Total Portfolios"
+        value={stats.totalPortfolios}
+        icon={Briefcase}
+        trend={`MF: ${stats.totalMfPortfolios || 0} | Stocks: ${stats.totalEquityPortfolios || 0}`}
+      />
+      <StatsCard
+        label="Total AUM"
+        value={`₹${(stats.totalAum / 10000000).toFixed(2)} Cr`}
+        icon={DollarSign}
+      />
+      <StatsCard
+        label="Notifications Enabled"
+        value={stats.notificationsEnabled}
+        icon={Bell}
+        trend={`${((stats.notificationsEnabled / stats.totalUsers) * 100).toFixed(0)}% of users opted in`}
+        trendUp={stats.notificationsEnabled > 0}
+      />
+    </div>
+  );
+}
+
+async function GrowthChartSection() {
+  let growthData;
+  try {
+    growthData = await fetchGrowthData();
+  } catch (e) {
+    return <div className="text-red-500">Failed to load chart data.</div>;
+  }
+  return <GrowthChart data={growthData} />;
+}
+
+async function OperatorSnapshotSection() {
+  let stats, growthData, recentChats;
   try {
     [stats, growthData, recentChats] = await Promise.all([
       fetchStats(),
@@ -26,13 +119,7 @@ export default async function Dashboard() {
       fetchChats(0, 6),
     ]);
   } catch (e) {
-    return (
-      <div className="text-red-500">
-        Error loading dashboard:{" "}
-        {e instanceof Error ? e.message : "Unknown error"}. Ensure backend is
-        running.
-      </div>
-    );
+    return <div className="text-red-500">Failed to load snapshot.</div>;
   }
 
   const totalUsers = Number(stats.totalUsers || 0);
@@ -46,8 +133,10 @@ export default async function Dashboard() {
     0,
   );
   const peakGrowthDay = (growthData || []).reduce(
-    (best: { date: string; users: number }, item: { date: string; users: number }) =>
-      (item?.users || 0) > best.users ? item : best,
+    (
+      best: { date: string; users: number },
+      item: { date: string; users: number },
+    ) => ((item?.users || 0) > best.users ? item : best),
     { date: "-", users: 0 },
   );
 
@@ -58,7 +147,9 @@ export default async function Dashboard() {
     totalUsers > 0 ? (notificationsEnabled / totalUsers) * 100 : 0;
 
   const attentionItems = [
-    newUsersToday === 0 ? "No new users today. Check acquisition channels." : "",
+    newUsersToday === 0
+      ? "No new users today. Check acquisition channels."
+      : "",
     dauPct < 10
       ? "DAU is low vs total users. Push re-engagement to inactive users."
       : "",
@@ -83,209 +174,148 @@ export default async function Dashboard() {
       : []),
     { label: "Check unresolved feedback", href: "/feedback" },
   ].slice(0, 3);
-  const refreshedAt = new Date().toLocaleString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
 
   return (
-    <div className="space-y-8">
-      <header className="mb-8 flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">
-            Dashboard Overview
-          </h1>
-          <p className="text-gray-400 mt-2">
-            Welcome back, Admin. Here&apos;s what&apos;s happening today.
-          </p>
-          <p className="text-xs text-gray-500 mt-2">
-            Last updated: {refreshedAt}
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md min-h-96">
+      <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide mb-4">
+        Operator Snapshot
+      </h3>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-800">
+          <div className="flex items-center gap-3">
+            <TrendingUp className="text-emerald-400" size={18} />
+            <span className="text-sm text-gray-300">Signups (30d)</span>
+          </div>
+          <span className="text-white font-mono font-bold">
+            {weeklySignups}
+          </span>
+        </div>
+        <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-800">
+          <div className="flex items-center gap-3">
+            <Users className="text-blue-400" size={18} />
+            <span className="text-sm text-gray-300">Activation (Proxy)</span>
+          </div>
+          <span className="text-white font-mono font-bold">
+            {activationProxyPct.toFixed(0)}%
+          </span>
+        </div>
+        <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-800">
+          <div className="flex items-center gap-3">
+            <Activity className="text-yellow-400" size={18} />
+            <span className="text-sm text-gray-300">DAU / Users</span>
+          </div>
+          <span className="text-white font-mono font-bold">
+            {dauPct.toFixed(0)}%
+          </span>
+        </div>
+        <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-800">
+          <div className="flex items-center gap-3">
+            <Bell className="text-indigo-400" size={18} />
+            <span className="text-sm text-gray-300">Notif Opt-In</span>
+          </div>
+          <span className="text-white font-mono font-bold">
+            {notificationOptInPct.toFixed(0)}%
+          </span>
+        </div>
+        <div className="pt-2 border-t border-gray-800">
+          <p className="text-xs text-gray-500">
+            Peak signup day:{" "}
+            <span className="text-gray-300 font-medium">
+              {peakGrowthDay.date}
+            </span>{" "}
+            ({peakGrowthDay.users})
           </p>
         </div>
-        <Link
-          href="/users"
-          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
-          Manage Users <ArrowRight size={16} />
-        </Link>
-      </header>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatsCard
-          label="Total Users"
-          value={stats.totalUsers}
-          icon={Users}
-          trend={`+${stats.newUsersToday} today`}
-          trendUp={stats.newUsersToday > 0}
-        />
-        <StatsCard
-          label="Daily Active Users"
-          value={stats.dau}
-          icon={Activity}
-          trend="Active in last 24h"
-          trendUp={true}
-        />
-        <StatsCard
-          label="Total Portfolios"
-          value={stats.totalPortfolios}
-          icon={Briefcase}
-          trend={`MF: ${stats.totalMfPortfolios || 0} | Stocks: ${stats.totalEquityPortfolios || 0}`}
-        />
-        <StatsCard
-          label="Total AUM"
-          value={`₹${(stats.totalAum / 10000000).toFixed(2)} Cr`}
-          icon={DollarSign}
-        />
-        <StatsCard
-          label="Notifications Enabled"
-          value={stats.notificationsEnabled}
-          icon={Bell}
-          trend={`${((stats.notificationsEnabled / stats.totalUsers) * 100).toFixed(0)}% of users opted in`}
-          trendUp={stats.notificationsEnabled > 0}
-        />
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <GrowthChart data={growthData} />
+        {attentionItems.length > 0 && (
+          <div className="pt-2 border-t border-gray-800 space-y-2">
+            <p className="text-xs text-amber-300 flex items-center gap-1">
+              <AlertTriangle size={14} /> Needs Attention
+            </p>
+            {attentionItems.slice(0, 2).map((item) => (
+              <p key={item} className="text-xs text-gray-400 leading-relaxed">
+                • {item}
+              </p>
+            ))}
+          </div>
+        )}
+        <div className="pt-2 border-t border-gray-800 space-y-2">
+          <p className="text-xs text-gray-500 uppercase tracking-wide">
+            Quick Actions
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/users"
+              className="text-xs px-2.5 py-1.5 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors inline-flex items-center gap-1">
+              Users <ExternalLink size={12} />
+            </Link>
+            <Link
+              href="/chats"
+              className="text-xs px-2.5 py-1.5 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors inline-flex items-center gap-1">
+              AI Chats <ExternalLink size={12} />
+            </Link>
+            <Link
+              href="/feedback"
+              className="text-xs px-2.5 py-1.5 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors inline-flex items-center gap-1">
+              Feedback <ExternalLink size={12} />
+            </Link>
+            <Link
+              href="/notifications"
+              className="text-xs px-2.5 py-1.5 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors inline-flex items-center gap-1">
+              Notifications <ExternalLink size={12} />
+            </Link>
+          </div>
         </div>
-
-        {/* Quick Insights */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md min-h-96">
-          <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide mb-4">
-            Operator Snapshot
-          </h3>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-800">
-              <div className="flex items-center gap-3">
-                <TrendingUp className="text-emerald-400" size={18} />
-                <span className="text-sm text-gray-300">
-                  Signups (30d)
-                </span>
-              </div>
-              <span className="text-white font-mono font-bold">
-                {weeklySignups}
-              </span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-800">
-              <div className="flex items-center gap-3">
-                <Users className="text-blue-400" size={18} />
-                <span className="text-sm text-gray-300">
-                  Activation (Proxy)
-                </span>
-              </div>
-              <span className="text-white font-mono font-bold">
-                {activationProxyPct.toFixed(0)}%
-              </span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-800">
-              <div className="flex items-center gap-3">
-                <Activity className="text-yellow-400" size={18} />
-                <span className="text-sm text-gray-300">DAU / Users</span>
-              </div>
-              <span className="text-white font-mono font-bold">
-                {dauPct.toFixed(0)}%
-              </span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-800">
-              <div className="flex items-center gap-3">
-                <Bell className="text-indigo-400" size={18} />
-                <span className="text-sm text-gray-300">Notif Opt-In</span>
-              </div>
-              <span className="text-white font-mono font-bold">
-                {notificationOptInPct.toFixed(0)}%
-              </span>
-            </div>
-            <div className="pt-2 border-t border-gray-800">
-              <p className="text-xs text-gray-500">
-                Peak signup day:{" "}
-                <span className="text-gray-300 font-medium">
-                  {peakGrowthDay.date}
-                </span>{" "}
-                ({peakGrowthDay.users})
-              </p>
-            </div>
-            {attentionItems.length > 0 && (
-              <div className="pt-2 border-t border-gray-800 space-y-2">
-                <p className="text-xs text-amber-300 flex items-center gap-1">
-                  <AlertTriangle size={14} /> Needs Attention
-                </p>
-                {attentionItems.slice(0, 2).map((item) => (
-                  <p key={item} className="text-xs text-gray-400 leading-relaxed">
-                    • {item}
-                  </p>
-                ))}
-              </div>
-            )}
-            <div className="pt-2 border-t border-gray-800 space-y-2">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">
-                Quick Actions
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Link
-                  href="/users"
-                  className="text-xs px-2.5 py-1.5 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors inline-flex items-center gap-1">
-                  Users <ExternalLink size={12} />
-                </Link>
-                <Link
-                  href="/chats"
-                  className="text-xs px-2.5 py-1.5 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors inline-flex items-center gap-1">
-                  AI Chats <ExternalLink size={12} />
-                </Link>
-                <Link
-                  href="/feedback"
-                  className="text-xs px-2.5 py-1.5 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors inline-flex items-center gap-1">
-                  Feedback <ExternalLink size={12} />
-                </Link>
-                <Link
-                  href="/notifications"
-                  className="text-xs px-2.5 py-1.5 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors inline-flex items-center gap-1">
-                  Notifications <ExternalLink size={12} />
-                </Link>
-              </div>
-            </div>
-            <div className="pt-2 border-t border-gray-800 space-y-2">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">
-                Today Focus
-              </p>
-              <div className="space-y-1.5">
-                {todayFocus.map((item) => (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className="block text-xs text-gray-300 hover:text-emerald-300 transition-colors">
-                    • {item.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
+        <div className="pt-2 border-t border-gray-800 space-y-2">
+          <p className="text-xs text-gray-500 uppercase tracking-wide">
+            Today Focus
+          </p>
+          <div className="space-y-1.5">
+            {todayFocus.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="block text-xs text-gray-300 hover:text-emerald-300 transition-colors">
+                • {item.label}
+              </Link>
+            ))}
           </div>
         </div>
       </div>
+    </div>
+  );
+}
 
-      {/* Recent AI Chats */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide flex items-center gap-2">
-            <MessageSquare size={16} /> Recent AI Conversations
-          </h3>
-          <Link
-            href="/chats"
-            className="text-emerald-400 hover:text-emerald-300 text-sm font-medium">
-            View All
-          </Link>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {recentChats.map(
-            (chat: {
-              id: number;
-              title?: string;
-              updated_at?: string;
-              preview?: string;
-              user?: { id?: number; name?: string };
-            }) => (
+async function RecentChatsSection() {
+  let recentChats = [];
+  try {
+    recentChats = await fetchChats(0, 6);
+  } catch (e) {
+    return (
+      <div className="text-red-500 mt-8">Failed to load recent chats.</div>
+    );
+  }
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md mt-8">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide flex items-center gap-2">
+          <MessageSquare size={16} /> Recent AI Conversations
+        </h3>
+        <Link
+          href="/chats"
+          className="text-emerald-400 hover:text-emerald-300 text-sm font-medium">
+          View All
+        </Link>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {recentChats.map(
+          (chat: {
+            id: number;
+            title?: string;
+            updated_at?: string;
+            preview?: string;
+            user?: { id?: number; name?: string };
+          }) => (
             <Link
               key={chat.id}
               href={`/users/${chat.user?.id ?? ""}`}
@@ -307,15 +337,67 @@ export default async function Dashboard() {
                 </p>
               </div>
             </Link>
-            ),
-          )}
-          {recentChats.length === 0 && (
-            <div className="col-span-full text-center text-gray-500 py-4">
-              No recent chats.
-            </div>
-          )}
+          ),
+        )}
+        {recentChats.length === 0 && (
+          <div className="col-span-full text-center text-gray-500 py-4">
+            No recent chats.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function Dashboard() {
+  const refreshedAt = new Date().toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+
+  return (
+    <div>
+      <header className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-white tracking-tight">
+            Dashboard Overview
+          </h1>
+          <p className="text-gray-400 mt-2">
+            Welcome back, Admin. Here&apos;s what&apos;s happening today.
+          </p>
+          <p className="text-xs text-gray-500 mt-2">
+            Last updated: {refreshedAt}
+          </p>
+        </div>
+        <Link
+          href="/users"
+          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+          Manage Users <ArrowRight size={16} />
+        </Link>
+      </header>
+
+      <div className="space-y-8">
+        <Suspense fallback={<StatsSkeleton />}>
+          <StatsSection />
+        </Suspense>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <Suspense fallback={<ChartSkeleton />}>
+              <GrowthChartSection />
+            </Suspense>
+          </div>
+
+          <Suspense fallback={<SnapshotSkeleton />}>
+            <OperatorSnapshotSection />
+          </Suspense>
         </div>
       </div>
+
+      <Suspense fallback={<ChatsSkeleton />}>
+        <RecentChatsSection />
+      </Suspense>
     </div>
   );
 }
