@@ -30,11 +30,7 @@ export default async function UsersPage({
         ? false
         : undefined;
   const hasPortfolio =
-    sp.portfolio === "yes"
-      ? true
-      : sp.portfolio === "no"
-        ? false
-        : undefined;
+    sp.portfolio === "yes" ? true : sp.portfolio === "no" ? false : undefined;
   const minValue = Math.max(0, Number(sp.min_value || "0") || 0);
   const atRisk = sp.at_risk === "1";
   const active24 = sp.active_24 === "1";
@@ -45,7 +41,7 @@ export default async function UsersPage({
       ? sp.sort_by
       : "created_at";
   const sortOrder = sp.sort_order === "asc" ? "asc" : "desc";
-  const PAGE_SIZE = 50;
+  const PAGE_SIZE = 25;
   const skip = (page - 1) * PAGE_SIZE;
 
   let users = [];
@@ -62,7 +58,11 @@ export default async function UsersPage({
         min_value: minValue > 0 ? minValue : undefined,
         at_risk: atRisk || undefined,
         active_within_hours: active24 ? 24 : undefined,
-        sort_by: sortBy as "created_at" | "last_active_at" | "portfolio_count" | "total_value",
+        sort_by: sortBy as
+          | "created_at"
+          | "last_active_at"
+          | "portfolio_count"
+          | "total_value",
         sort_order: sortOrder,
       }),
       fetchUsersMeta({

@@ -65,10 +65,13 @@ export async function fetchGrowthData() {
 
 export async function fetchUsers(skip = 0, limit = 50) {
   const headers = await getHeaders();
-  const res = await fetch(`${API_URL}/admin/users?skip=${skip}&limit=${limit}`, {
-    cache: "no-store",
-    headers,
-  });
+  const res = await fetch(
+    `${API_URL}/admin/users?skip=${skip}&limit=${limit}`,
+    {
+      cache: "no-store",
+      headers,
+    },
+  );
   if (!res.ok) throw new Error("Failed to fetch users");
   return res.json();
 }
@@ -88,7 +91,7 @@ export async function fetchUsersWithFilters(params: {
   const headers = await getHeaders();
   const qs = new URLSearchParams();
   qs.set("skip", String(params.skip ?? 0));
-  qs.set("limit", String(params.limit ?? 50));
+  qs.set("limit", String(params.limit ?? 25));
   if (params.search) qs.set("search", params.search);
   if (typeof params.notifications_enabled === "boolean") {
     qs.set("notifications_enabled", String(params.notifications_enabled));
@@ -102,7 +105,10 @@ export async function fetchUsersWithFilters(params: {
   if (typeof params.at_risk === "boolean") {
     qs.set("at_risk", String(params.at_risk));
   }
-  if (typeof params.active_within_hours === "number" && params.active_within_hours > 0) {
+  if (
+    typeof params.active_within_hours === "number" &&
+    params.active_within_hours > 0
+  ) {
     qs.set("active_within_hours", String(params.active_within_hours));
   }
   if (params.sort_by) qs.set("sort_by", params.sort_by);
@@ -139,7 +145,10 @@ export async function fetchUsersMeta(params: {
   if (typeof params.at_risk === "boolean") {
     qs.set("at_risk", String(params.at_risk));
   }
-  if (typeof params.active_within_hours === "number" && params.active_within_hours > 0) {
+  if (
+    typeof params.active_within_hours === "number" &&
+    params.active_within_hours > 0
+  ) {
     qs.set("active_within_hours", String(params.active_within_hours));
   }
 
