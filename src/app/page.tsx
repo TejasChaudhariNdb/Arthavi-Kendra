@@ -128,16 +128,16 @@ async function OperatorSnapshotSection() {
   const notificationsEnabled = Number(stats.notificationsEnabled || 0);
   const newUsersToday = Number(stats.newUsersToday || 0);
 
-  const weeklySignups = (growthData || []).reduce(
+  const weeklySignups = (growthData?.growth15 || []).slice(-7).reduce(
     (sum: number, item: { users?: number }) => sum + Number(item.users || 0),
     0,
   );
-  const peakGrowthDay = (growthData || []).reduce(
+  const peakGrowthDay = (growthData?.growth15 || []).reduce(
     (
-      best: { date: string; users: number },
-      item: { date: string; users: number },
+      best: { displayDate: string; currentDate: string; users: number },
+      item: { displayDate: string; currentDate: string; users: number },
     ) => ((item?.users || 0) > best.users ? item : best),
-    { date: "-", users: 0 },
+    { displayDate: "-", currentDate: "-", users: 0 },
   );
 
   const activationProxyPct =
@@ -221,7 +221,7 @@ async function OperatorSnapshotSection() {
           <p className="text-xs text-gray-500">
             Peak signup day:{" "}
             <span className="text-gray-300 font-medium">
-              {peakGrowthDay.date}
+              {peakGrowthDay.displayDate || peakGrowthDay.currentDate}
             </span>{" "}
             ({peakGrowthDay.users})
           </p>
