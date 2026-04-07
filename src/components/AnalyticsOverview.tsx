@@ -8,6 +8,8 @@ import {
   TrendingUp,
   RefreshCw,
   AlertCircle,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import {
   LineChart,
@@ -40,10 +42,20 @@ interface TodayTrendResponse {
   }>;
 }
 
+interface Last15DaysTrendResponse {
+  total_users_last_15_days: number;
+  trend: Array<{
+    date: string;
+    full_date: string;
+    users: number;
+  }>;
+}
+
 interface OverviewState {
   activeNow: ActiveNowResponse | null;
   last30Min: Last30MinResponse | null;
   todayTrend: TodayTrendResponse | null;
+  last15DaysTrend: Last15DaysTrendResponse | null;
 }
 
 function MetricCard({
@@ -76,10 +88,12 @@ function MetricCard({
 }
 
 export default function AnalyticsOverview() {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [state, setState] = useState<OverviewState>({
     activeNow: null,
     last30Min: null,
     todayTrend: null,
+    last15DaysTrend: null,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -92,20 +106,29 @@ export default function AnalyticsOverview() {
         setLoading(true);
         setError(null);
 
-        const [activeNowRes, last30MinRes, todayTrendRes] = await Promise.all([
+        const [activeNowRes, last30MinRes, todayTrendRes, last15DaysTrendRes] =
+          await Promise.all([
           fetch("/api/analytics/active-now", { cache: "no-store" }),
           fetch("/api/analytics/last-30-min", { cache: "no-store" }),
           fetch("/api/analytics/today-trend", { cache: "no-store" }),
+          fetch("/api/analytics/last-15-days-trend", { cache: "no-store" }),
         ]);
 
-        if (!activeNowRes.ok || !last30MinRes.ok || !todayTrendRes.ok) {
+        if (
+          !activeNowRes.ok ||
+          !last30MinRes.ok ||
+          !todayTrendRes.ok ||
+          !last15DaysTrendRes.ok
+        ) {
           throw new Error("Unable to load analytics overview");
         }
 
-        const [activeNow, last30Min, todayTrend] = await Promise.all([
+        const [activeNow, last30Min, todayTrend, last15DaysTrend] =
+          await Promise.all([
           activeNowRes.json() as Promise<ActiveNowResponse>,
           last30MinRes.json() as Promise<Last30MinResponse>,
           todayTrendRes.json() as Promise<TodayTrendResponse>,
+          last15DaysTrendRes.json() as Promise<Last15DaysTrendResponse>,
         ]);
 
         if (!cancelled) {
@@ -113,6 +136,7 @@ export default function AnalyticsOverview() {
             activeNow,
             last30Min,
             todayTrend,
+            last15DaysTrend,
           });
         }
       } catch (err) {
@@ -138,10 +162,11 @@ export default function AnalyticsOverview() {
   }, []);
 
   const trendData = state.todayTrend?.trend ?? [];
+  const last15DaysData = state.last15DaysTrend?.trend ?? [];
 
   return (
     <section className="rounded-3xl border border-gray-800 bg-gradient-to-br from-gray-950 via-gray-950 to-gray-900 p-6 shadow-xl">
-      <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-400/80">
             Analytics Overview
@@ -149,20 +174,31 @@ export default function AnalyticsOverview() {
           <h2 className="mt-2 text-2xl font-bold text-white">
             Live GA4 dashboard snapshot
           </h2>
-          <p className="mt-2 max-w-2xl text-sm text-gray-400">
-            Today users includes both new and returning users active today. Realtime
-            cards are refreshed automatically every 60 seconds.
-          </p>
+
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <RefreshCw size={16} />
-          Auto refresh: 60s
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <RefreshCw size={16} />
+            Auto refresh: 60s
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsExpanded((current) => !current)}
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-700 bg-gray-900 px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:border-emerald-500/40 hover:text-white"
+          >
+            {isExpanded ? "Collapse" : "Expand"}
+            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
         </div>
       </div>
 
-      {loading ? (
+      {!isExpanded ? (
+        <div className="mt-6 rounded-2xl border border-gray-800 bg-gray-900/70 px-5 py-4 text-sm text-gray-400">
+          Expand kr purn dashboard bagala
+        </div>
+      ) : loading ? (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((item) => (
+          {[1, 2, 3, 4, 5].map((item) => (
             <div
               key={item}
               className="min-h-[160px] animate-pulse rounded-2xl border border-gray-800 bg-gray-900"
@@ -178,8 +214,8 @@ export default function AnalyticsOverview() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:col-span-12 xl:grid-cols-3">
+        <div className="mt-5 grid grid-cols-1 gap-6 xl:grid-cols-12">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:col-span-12 xl:grid-cols-4">
             <MetricCard
               title="Current / Today Users"
               value={state.todayTrend?.today_users ?? 0}
@@ -197,6 +233,12 @@ export default function AnalyticsOverview() {
               value={state.last30Min?.last_30_min_users ?? 0}
               hint="Same realtime active-users metric, shown separately for quick scanning."
               icon={TimerReset}
+            />
+            <MetricCard
+              title="15 Day User Total"
+              value={state.last15DaysTrend?.total_users_last_15_days ?? 0}
+              hint="Daily total users summed across the last 15 days."
+              icon={TrendingUp}
             />
           </div>
 
@@ -266,6 +308,54 @@ export default function AnalyticsOverview() {
                   <span className="font-semibold text-white">{item.users}</span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="xl:col-span-12 rounded-2xl border border-gray-800 bg-gray-900 p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/10 p-3 text-indigo-300">
+                <Users size={20} />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Last 15 Days Users</h3>
+                <p className="text-sm text-gray-400">
+                  Daily total users from GA4 for the last 15 days
+                </p>
+              </div>
+            </div>
+
+            <div className="h-[320px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={last15DaysData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                  <XAxis
+                    dataKey="date"
+                    stroke="#9ca3af"
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis stroke="#9ca3af" tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#111827",
+                      border: "1px solid #374151",
+                      borderRadius: "12px",
+                      color: "#f9fafb",
+                    }}
+                    labelFormatter={(_, payload) =>
+                      payload?.[0]?.payload?.full_date ?? ""
+                    }
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="users"
+                    stroke="#818cf8"
+                    strokeWidth={3}
+                    dot={{ r: 3, fill: "#818cf8" }}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>
