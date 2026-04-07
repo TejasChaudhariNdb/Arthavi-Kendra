@@ -255,37 +255,39 @@ export default function AnalyticsOverview() {
               </div>
             </div>
 
-            <div className="h-[320px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                  <XAxis
-                    dataKey="hour"
-                    stroke="#9ca3af"
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value: string) => `${value}:00`}
-                  />
-                  <YAxis stroke="#9ca3af" tickLine={false} axisLine={false} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#111827",
-                      border: "1px solid #374151",
-                      borderRadius: "12px",
-                      color: "#f9fafb",
-                    }}
-                    labelFormatter={(label) => `${label}:00`}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="users"
-                    stroke="#34d399"
-                    strokeWidth={3}
-                    dot={{ r: 3, fill: "#34d399" }}
-                    activeDot={{ r: 5 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+            <div className="-mx-2 overflow-x-auto px-2 pb-2 [scrollbar-width:thin] touch-pan-x">
+              <div className="h-[320px] min-w-[720px] sm:min-w-0 sm:w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={trendData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                    <XAxis
+                      dataKey="hour"
+                      stroke="#9ca3af"
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value: string) => `${value}:00`}
+                    />
+                    <YAxis stroke="#9ca3af" tickLine={false} axisLine={false} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#111827",
+                        border: "1px solid #374151",
+                        borderRadius: "12px",
+                        color: "#f9fafb",
+                      }}
+                      labelFormatter={(label) => `${label}:00`}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="users"
+                      stroke="#34d399"
+                      strokeWidth={3}
+                      dot={{ r: 3, fill: "#34d399" }}
+                      activeDot={{ r: 5 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
 
@@ -324,38 +326,40 @@ export default function AnalyticsOverview() {
               </div>
             </div>
 
-            <div className="h-[320px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={last15DaysData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                  <XAxis
-                    dataKey="date"
-                    stroke="#9ca3af"
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis stroke="#9ca3af" tickLine={false} axisLine={false} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#111827",
-                      border: "1px solid #374151",
-                      borderRadius: "12px",
-                      color: "#f9fafb",
-                    }}
-                    labelFormatter={(_, payload) =>
-                      payload?.[0]?.payload?.full_date ?? ""
-                    }
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="users"
-                    stroke="#818cf8"
-                    strokeWidth={3}
-                    dot={{ r: 3, fill: "#818cf8" }}
-                    activeDot={{ r: 5 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+            <div className="-mx-2 overflow-x-auto px-2 pb-2 [scrollbar-width:thin] touch-pan-x">
+              <div className="h-[320px] min-w-[720px] sm:min-w-0 sm:w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={last15DaysData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                    <XAxis
+                      dataKey="date"
+                      stroke="#9ca3af"
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis stroke="#9ca3af" tickLine={false} axisLine={false} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#111827",
+                        border: "1px solid #374151",
+                        borderRadius: "12px",
+                        color: "#f9fafb",
+                      }}
+                      labelFormatter={(_, payload) =>
+                        payload?.[0]?.payload?.full_date ?? ""
+                      }
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="users"
+                      stroke="#818cf8"
+                      strokeWidth={3}
+                      dot={{ r: 3, fill: "#818cf8" }}
+                      activeDot={{ r: 5 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
         </div>
