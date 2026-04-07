@@ -5,10 +5,13 @@ export const dynamic = "force-dynamic";
 
 export default async function UserDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string; chatId?: string }>;
 }) {
   const { id } = await params;
+  const sp = await searchParams;
   let data;
   try {
     data = await fetchUserDetail(id);
@@ -23,6 +26,16 @@ export default async function UserDetailPage({
     );
   }
 
-  // Pass all data to Client Component for interactive UI
-  return <UserDetailClient data={data} />;
+  const initialTab =
+    sp.tab === "chats" || sp.tab === "holdings" ? sp.tab : "overview";
+  const initialChatId =
+    sp.chatId && !Number.isNaN(Number(sp.chatId)) ? Number(sp.chatId) : null;
+
+  return (
+    <UserDetailClient
+      data={data}
+      initialTab={initialTab}
+      initialChatId={initialChatId}
+    />
+  );
 }

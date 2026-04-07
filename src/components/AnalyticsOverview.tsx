@@ -99,6 +99,10 @@ export default function AnalyticsOverview() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isExpanded) {
+      return;
+    }
+
     let cancelled = false;
 
     async function loadAnalytics() {
@@ -159,7 +163,7 @@ export default function AnalyticsOverview() {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, []);
+  }, [isExpanded]);
 
   const trendData = state.todayTrend?.trend ?? [];
   const last15DaysData = state.last15DaysTrend?.trend ?? [];

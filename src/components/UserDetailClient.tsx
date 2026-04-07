@@ -6,20 +6,27 @@ import {
   Wallet,
   TrendingUp,
   PieChart,
-  Activity,
   History,
   Layers,
   MessageSquare,
   ChevronRight,
-  Search,
   Filter,
 } from "lucide-react";
 import Link from "next/link";
+import ChatInbox from "@/components/ChatInbox";
 import StatsCard from "@/components/StatsCard";
 import AllocationChart from "@/components/AllocationChart";
 import { clsx } from "clsx";
 
-export default function UserDetailClient({ data }: { data: any }) {
+export default function UserDetailClient({
+  data,
+  initialTab = "overview",
+  initialChatId = null,
+}: {
+  data: any;
+  initialTab?: "overview" | "holdings" | "chats";
+  initialChatId?: number | null;
+}) {
   const {
     user,
     portfolios,
@@ -29,14 +36,17 @@ export default function UserDetailClient({ data }: { data: any }) {
     chats = [],
   } = data;
   const [activeTab, setActiveTab] = useState<"overview" | "holdings" | "chats">(
-    "overview",
+    initialTab,
   );
   const [selectedHoldingType, setSelectedHoldingType] = useState<
     "ALL" | "EQUITY" | "MUTUAL_FUND"
   >("ALL");
-  const [selectedChatId, setSelectedChatId] = useState<number | null>(
-    chats?.length > 0 ? chats[0].id : null,
-  );
+  const selectedChatId =
+    initialChatId && chats.some((chat: any) => chat.id === initialChatId)
+      ? initialChatId
+      : chats?.length > 0
+        ? chats[0].id
+        : null;
 
   // Derived Data
   const totalInvested = portfolios.reduce(
@@ -61,8 +71,6 @@ export default function UserDetailClient({ data }: { data: any }) {
   const filteredHoldings = all_holdings.filter((h: any) =>
     selectedHoldingType === "ALL" ? true : h.type === selectedHoldingType,
   );
-
-  const activeChat = chats.find((c: any) => c.id === selectedChatId);
 
   return (
     <div className="space-y-6">
@@ -413,90 +421,23 @@ export default function UserDetailClient({ data }: { data: any }) {
 
       {/* CHATS TAB */}
       {activeTab === "chats" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px] animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {/* Sidebar List */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-gray-800 bg-gray-950">
-              <h3 className="font-bold text-white">Sessions</h3>
-            </div>
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
-              {chats.length > 0 ? (
-                chats.map((chat: any) => (
-                  <button
-                    key={chat.id}
-                    onClick={() => setSelectedChatId(chat.id)}
-                    className={clsx(
-                      "w-full text-left p-3 rounded-lg border transition-all",
-                      selectedChatId === chat.id
-                        ? "bg-gray-800 border-gray-700 shadow-sm"
-                        : "bg-transparent border-transparent hover:bg-gray-800/50 text-gray-400",
-                    )}>
-                    <div className="font-medium text-sm text-gray-200 truncate">
-                      {chat.title || "Untitled Session"}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {chat.updated_at || "Unknown Date"}
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <div className="p-4 text-center text-gray-500 text-sm">
-                  No chat history found.
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Chat Content */}
-          <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-gray-800 bg-gray-950 flex justify-between items-center">
-              <h3 className="font-bold text-white flex items-center gap-2">
-                <MessageSquare size={16} className="text-emerald-400" />
-                {activeChat?.title || "Chat Details"}
-              </h3>
-              <span className="text-xs text-gray-500">
-                ID: {selectedChatId}
-              </span>
-            </div>
-
-            <div className="flex-1 p-6 overflow-y-auto custom-scrollbar space-y-6">
-              {activeChat ? (
-                activeChat.messages.length > 0 ? (
-                  activeChat.messages.map((msg: any, idx: number) => (
-                    <div
-                      key={idx}
-                      className={clsx(
-                        "flex flex-col gap-2 max-w-[85%]",
-                        msg.role === "user"
-                          ? "self-end items-end"
-                          : "self-start items-start",
-                      )}>
-                      <div
-                        className={clsx(
-                          "p-4 rounded-2xl text-sm leading-relaxed",
-                          msg.role === "user"
-                            ? "bg-emerald-600 text-white rounded-br-none"
-                            : "bg-gray-800 text-gray-200 rounded-bl-none border border-gray-700",
-                        )}>
-                        {msg.content}
-                      </div>
-                      <span className="text-[10px] text-gray-500 px-2">
-                        {msg.created_at}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="h-full flex items-center justify-center text-gray-500">
-                    No messages in this session.
-                  </div>
-                )
-              ) : (
-                <div className="h-full flex items-center justify-center text-gray-500">
-                  Select a session to view messages.
-                </div>
-              )}
-            </div>
-          </div>
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <ChatInbox
+            initialSessions={chats.map((chat: any) => ({
+              id: chat.id,
+              title: chat.title || "Untitled Session",
+              updated_at: chat.updated_at || "",
+              preview:
+                chat.messages?.[chat.messages.length - 1]?.content ||
+                "No messages",
+              user: {
+                id: user.id,
+                name: user.full_name || "Unknown User",
+                email: user.email,
+              },
+            }))}
+            initialSelectedSessionId={selectedChatId}
+          />
         </div>
       )}
     </div>

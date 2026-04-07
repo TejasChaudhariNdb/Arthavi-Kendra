@@ -193,6 +193,16 @@ export async function fetchReferrals() {
   return res.json();
 }
 
+export async function fetchGoalsAdmin() {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/goals`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch goals admin data");
+  return res.json();
+}
+
 export async function fetchAnalytics() {
   const headers = await getHeaders();
   const res = await fetch(`${API_URL}/admin/analytics`, {

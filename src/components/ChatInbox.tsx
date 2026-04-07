@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import {
   MessageSquare,
@@ -49,8 +49,10 @@ interface SessionDetail {
 
 export default function ChatInbox({
   initialSessions,
+  initialSelectedSessionId,
 }: {
   initialSessions: ChatSession[];
+  initialSelectedSessionId?: number | null;
 }) {
   const [sessions] = useState<ChatSession[]>(initialSessions);
   const [selected, setSelected] = useState<SessionDetail | null>(null);
@@ -82,6 +84,12 @@ export default function ChatInbox({
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (initialSelectedSessionId) {
+      void loadMessages(initialSelectedSessionId);
+    }
+  }, [initialSelectedSessionId, loadMessages]);
 
   return (
     <div className="flex h-[calc(100vh-120px)] rounded-xl overflow-hidden border border-gray-800">

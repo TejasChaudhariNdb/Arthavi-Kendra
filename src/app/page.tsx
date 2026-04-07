@@ -319,7 +319,7 @@ async function RecentChatsSection() {
           }) => (
             <Link
               key={chat.id}
-              href={`/users/${chat.user?.id ?? ""}`}
+              href={`/users/${chat.user?.id ?? ""}?tab=chats&chatId=${chat.id}`}
               className="block group">
               <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-800 group-hover:border-emerald-500/30 group-hover:bg-gray-800 transition-all h-full flex flex-col">
                 <div className="flex justify-between items-start mb-2">
