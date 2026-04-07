@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { fetchStats, fetchGrowthData, fetchChats } from "@/lib/api";
+import AnalyticsOverview from "@/components/AnalyticsOverview";
 import StatsCard from "@/components/StatsCard";
 import GrowthChart from "@/components/GrowthChart";
 import {
@@ -59,7 +60,7 @@ async function StatsSection() {
   let stats;
   try {
     stats = await fetchStats();
-  } catch (e) {
+  } catch {
     return <div className="text-red-500">Failed to load stats.</div>;
   }
   return (
@@ -104,7 +105,7 @@ async function GrowthChartSection() {
   let growthData;
   try {
     growthData = await fetchGrowthData();
-  } catch (e) {
+  } catch {
     return <div className="text-red-500">Failed to load chart data.</div>;
   }
   return <GrowthChart data={growthData} />;
@@ -118,7 +119,7 @@ async function OperatorSnapshotSection() {
       fetchGrowthData(),
       fetchChats(0, 6),
     ]);
-  } catch (e) {
+  } catch {
     return <div className="text-red-500">Failed to load snapshot.</div>;
   }
 
@@ -289,7 +290,7 @@ async function RecentChatsSection() {
   let recentChats = [];
   try {
     recentChats = await fetchChats(0, 6);
-  } catch (e) {
+  } catch {
     return (
       <div className="text-red-500 mt-8">Failed to load recent chats.</div>
     );
@@ -378,6 +379,8 @@ export default function Dashboard() {
       </header>
 
       <div className="space-y-8">
+        <AnalyticsOverview />
+
         <Suspense fallback={<StatsSkeleton />}>
           <StatsSection />
         </Suspense>

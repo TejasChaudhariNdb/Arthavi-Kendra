@@ -1,4 +1,5 @@
 import { fetchAnalytics } from "@/lib/api";
+import AnalyticsOverview from "@/components/AnalyticsOverview";
 import Link from "next/link";
 import {
   BarChart3,
@@ -137,6 +138,8 @@ export default async function AnalyticsPage() {
 
   return (
     <div className="space-y-8">
+      <AnalyticsOverview />
+
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-white tracking-tight">
