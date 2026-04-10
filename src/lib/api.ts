@@ -63,6 +63,16 @@ export async function fetchGrowthData() {
   return res.json();
 }
 
+export async function fetchBuyIdeas() {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/buy-ideas`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch buy ideas");
+  return res.json();
+}
+
 export async function fetchUsers(skip = 0, limit = 50) {
   const headers = await getHeaders();
   const res = await fetch(
