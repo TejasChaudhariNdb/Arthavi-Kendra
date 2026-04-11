@@ -14,6 +14,7 @@ import {
   Bell,
   MessageSquarePlus,
   Target,
+  CandlestickChart,
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -26,6 +27,7 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
     { href: "/referrals", label: "Referrals", icon: Gift },
     { href: "/goals", label: "Goals", icon: Target },
     { href: "/master-data", label: "Master Data", icon: Database },
+    { href: "/buy-signals", label: "Stocks Recommended", icon: CandlestickChart },
     { href: "/chats", label: "AI Chats", icon: MessageSquare },
     { href: "/notifications", label: "Notifications", icon: Bell },
     { href: "/feedback", label: "Feedback", icon: MessageSquarePlus },
