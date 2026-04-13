@@ -15,6 +15,7 @@ import {
   MessageSquarePlus,
   Target,
   CandlestickChart,
+  Activity,
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -33,6 +34,7 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
     { href: "/feedback", label: "Feedback", icon: MessageSquarePlus },
     { href: "/donations", label: "Donations", icon: Gift },
     { href: "/analytics", label: "Analytics", icon: LineChart },
+    { href: "/activity", label: "User Activity", icon: Activity },
     { href: "/settings", label: "Settings", icon: Settings },
   ];
 

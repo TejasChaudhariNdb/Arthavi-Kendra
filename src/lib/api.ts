@@ -235,3 +235,44 @@ export async function fetchDonations(skip = 0, limit = 50) {
   if (!res.ok) throw new Error("Failed to fetch donations");
   return res.json();
 }
+
+export async function fetchMetricsDau(days = 30) {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/metrics/dau?days=${days}`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch DAU metrics");
+  return res.json();
+}
+
+export async function fetchMetricsWau(weeks = 12) {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/metrics/wau?weeks=${weeks}`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch WAU metrics");
+  return res.json();
+}
+
+export async function fetchMetricsMau(months = 6) {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/metrics/mau?months=${months}`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch MAU metrics");
+  return res.json();
+}
+
+export async function fetchUserActivity(userId: string) {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/users/${userId}/activity`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch user activity");
+  return res.json();
+}
+
