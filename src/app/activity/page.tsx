@@ -1,15 +1,17 @@
 import { Suspense } from "react";
-import { fetchMetricsDau, fetchMetricsWau, fetchMetricsMau } from "@/lib/api";
+import { fetchMetricsDau, fetchMetricsWau, fetchMetricsMau, fetchUsersWithFilters } from "@/lib/api";
 import ActivityCharts from "@/components/ActivityCharts";
+import RecentActiveUsersTable from "@/components/RecentActiveUsersTable";
 import { Activity } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function ActivityPage() {
-  const [dau, wau, mau] = await Promise.all([
+  const [dau, wau, mau, recentUsers] = await Promise.all([
     fetchMetricsDau(30),
     fetchMetricsWau(12),
     fetchMetricsMau(6),
+    fetchUsersWithFilters({ active_within_hours: 24, limit: 100, sort_by: "last_active_at", sort_order: "desc" }),
   ]);
 
   return (
@@ -35,6 +37,15 @@ export default async function ActivityPage() {
           </div>
         }>
         <ActivityCharts dau={dau} wau={wau} mau={mau} />
+      </Suspense>
+
+      <Suspense
+        fallback={
+          <div className="h-48 flex items-center justify-center text-gray-500">
+            Loading recent users...
+          </div>
+        }>
+        <RecentActiveUsersTable users={recentUsers} />
       </Suspense>
     </div>
   );
