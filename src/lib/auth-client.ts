@@ -136,3 +136,23 @@ export async function exportUsersCsv() {
   a.remove();
   window.URL.revokeObjectURL(url);
 }
+
+export async function exportSlippingUsersCsv(days: number = 5) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/users/export-slipping?days=${days}`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) throw new Error("Failed to export slipping users CSV");
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `slipping_users_export_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+}

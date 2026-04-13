@@ -13,8 +13,9 @@ import {
   Bell,
   BellOff,
   Download,
+  UserMinus,
 } from "lucide-react";
-import { exportUsersCsv, impersonateUser } from "@/lib/auth-client";
+import { exportUsersCsv, exportSlippingUsersCsv, impersonateUser } from "@/lib/auth-client";
 
 interface User {
   id: number;
@@ -134,6 +135,7 @@ export default function UsersTableClient({
   const [sortOrder, setSortOrder] = useState(initialFilters.sortOrder || "desc");
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [exportingSlipping, setExportingSlipping] = useState(false);
 
   const handleSort = (key: SortKey) => {
     let direction: SortDirection = "asc";
@@ -171,6 +173,18 @@ export default function UsersTableClient({
       alert("Failed to export users CSV.");
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleExportSlipping = async () => {
+    setExportingSlipping(true);
+    try {
+      await exportSlippingUsersCsv(5);
+    } catch (error) {
+      console.error("Slipping Users CSV export failed", error);
+      alert("Failed to export slipping users.");
+    } finally {
+      setExportingSlipping(false);
     }
   };
 
@@ -337,11 +351,18 @@ export default function UsersTableClient({
       <div className="flex flex-col md:flex-row gap-3 md:items-center">
         <div className="flex-1" />
         <button
+          onClick={handleExportSlipping}
+          disabled={exportingSlipping}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-rose-900/30 border border-rose-800/50 text-rose-400 hover:text-rose-300 hover:bg-rose-900/50 transition-colors disabled:opacity-60 text-sm font-medium">
+          <UserMinus size={16} />
+          {exportingSlipping ? "Exporting..." : "Export Churn Risk (5+ Days)"}
+        </button>
+        <button
           onClick={handleExport}
           disabled={exporting}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gray-900 border border-gray-800 text-gray-300 hover:text-white hover:bg-gray-800 transition-colors disabled:opacity-60">
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gray-900 border border-gray-800 text-gray-300 hover:text-white hover:bg-gray-800 transition-colors disabled:opacity-60 text-sm font-medium">
           <Download size={16} />
-          {exporting ? "Exporting..." : "Export CSV"}
+          {exporting ? "Exporting..." : "Export All to CSV"}
         </button>
       </div>
 

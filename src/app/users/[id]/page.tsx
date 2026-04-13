@@ -1,4 +1,4 @@
-import { fetchUserDetail } from "@/lib/api";
+import { fetchUserDetail, fetchUserActivity } from "@/lib/api";
 import UserDetailClient from "@/components/UserDetailClient";
 
 export const dynamic = "force-dynamic";
@@ -12,9 +12,12 @@ export default async function UserDetailPage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
-  let data;
+  let data, activity;
   try {
-    data = await fetchUserDetail(id);
+    [data, activity] = await Promise.all([
+      fetchUserDetail(id),
+      fetchUserActivity(id).catch(() => null), // Catch errors so page still works if tracking missing
+    ]);
   } catch (e) {
     return (
       <div className="p-8 text-center text-red-500 bg-gray-900 border border-gray-800 rounded-xl">
@@ -34,6 +37,7 @@ export default async function UserDetailPage({
   return (
     <UserDetailClient
       data={data}
+      activity={activity}
       initialTab={initialTab}
       initialChatId={initialChatId}
     />

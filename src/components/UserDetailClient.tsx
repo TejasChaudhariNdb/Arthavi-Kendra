@@ -11,7 +11,18 @@ import {
   MessageSquare,
   ChevronRight,
   Filter,
+  Activity,
+  CalendarDays,
 } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 import Link from "next/link";
 import ChatInbox from "@/components/ChatInbox";
 import StatsCard from "@/components/StatsCard";
@@ -20,10 +31,12 @@ import { clsx } from "clsx";
 
 export default function UserDetailClient({
   data,
+  activity,
   initialTab = "overview",
   initialChatId = null,
 }: {
   data: any;
+  activity?: any;
   initialTab?: "overview" | "holdings" | "chats";
   initialChatId?: number | null;
 }) {
@@ -67,6 +80,26 @@ export default function UserDetailClient({
     { name: "Equity", value: equityValue },
     { name: "Mutual Funds", value: mfValue },
   ];
+
+  // Activity Processing
+  const processActivityData = () => {
+    if (!activity || !activity.recent_activity_dates) return [];
+    const dates = activity.recent_activity_dates;
+    const chartData = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const tzOffset = d.getTimezoneOffset() * 60000;
+      const localISOTime = new Date(d.getTime() - tzOffset).toISOString().split('T')[0];
+      chartData.push({
+        date: localISOTime.slice(5, 10), // MM-DD
+        fullDate: localISOTime,
+        active: dates.includes(localISOTime) ? 1 : 0,
+      });
+    }
+    return chartData;
+  };
+  const activityChartData = processActivityData();
 
   const filteredHoldings = all_holdings.filter((h: any) =>
     selectedHoldingType === "ALL" ? true : h.type === selectedHoldingType,
@@ -162,6 +195,58 @@ export default function UserDetailClient({
               icon={PieChart}
             />
           </div>
+
+          {/* Activity Section */}
+          {activity && (
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md flex flex-col lg:flex-row gap-6">
+              <div className="lg:w-1/4 flex flex-col justify-center space-y-4 border-b lg:border-b-0 lg:border-r border-gray-800 pb-6 lg:pb-0 lg:pr-6">
+                <div>
+                  <h3 className="text-gray-400 font-medium text-sm flex items-center gap-2 mb-1">
+                    <Activity size={16} /> Total Active Days
+                  </h3>
+                  <div className="text-3xl font-bold text-white">
+                    {activity.total_active_days}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-gray-400 font-medium text-sm flex items-center gap-2 mb-1">
+                    <CalendarDays size={16} /> Last Seen
+                  </h3>
+                  <div className="text-lg font-medium text-emerald-400">
+                    {activity.last_active_date || "N/A"}
+                  </div>
+                </div>
+              </div>
+              <div className="lg:w-3/4">
+                <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide mb-4">
+                  Activity Timeline (Last 30 Days)
+                </h3>
+                <div className="h-32 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={activityChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                      <Tooltip
+                        cursor={{ fill: "#374151" }}
+                        contentStyle={{
+                          backgroundColor: "#1f2937",
+                          borderColor: "#374151",
+                          color: "#f3f4f6",
+                          fontSize: 12,
+                          borderRadius: "0.5rem",
+                        }}
+                        formatter={(value) => [value === 1 ? "Active" : "Inactive", "Status"]}
+                        labelFormatter={(label) => `Date: ${label}`}
+                      />
+                      <Bar dataKey="active" radius={[2, 2, 0, 0]}>
+                        {activityChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.active ? "#10b981" : "#1f2937"} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Col */}
