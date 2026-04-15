@@ -6,12 +6,21 @@ import { Activity } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
+/** Hours elapsed since midnight IST (UTC+5:30) — gives true "today" window */
+function hoursSinceMidnightIST(): number {
+  const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+  const midnightIST = new Date(nowIST);
+  midnightIST.setUTCHours(0, 0, 0, 0);
+  const hours = (nowIST.getTime() - midnightIST.getTime()) / (1000 * 60 * 60);
+  return Math.max(1, Math.ceil(hours)); // min 1 to avoid 0 at midnight
+}
+
 export default async function ActivityPage() {
   const [dau, wau, mau, recentUsers] = await Promise.all([
     fetchMetricsDau(30),
     fetchMetricsWau(12),
     fetchMetricsMau(6),
-    fetchUsersWithFilters({ active_within_hours: 24, limit: 100, sort_by: "last_active_at", sort_order: "desc" }),
+    fetchUsersWithFilters({ active_within_hours: hoursSinceMidnightIST(), limit: 100, sort_by: "last_active_at", sort_order: "desc" }),
   ]);
 
   return (
