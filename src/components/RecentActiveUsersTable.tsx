@@ -48,6 +48,7 @@ export default function RecentActiveUsersTable({ users }: { users: User[] }) {
             <tr>
               <th className="px-6 py-4 whitespace-nowrap text-xs">Name</th>
               <th className="px-6 py-4 whitespace-nowrap text-xs">Email</th>
+              <th className="px-6 py-4 whitespace-nowrap text-xs">Joined</th>
               <th className="px-6 py-4 whitespace-nowrap text-xs">Last Active</th>
               <th className="px-6 py-4 whitespace-nowrap text-xs text-right">Value (INR)</th>
               <th className="px-6 py-4 whitespace-nowrap text-xs text-right">Actions</th>
@@ -67,6 +68,9 @@ export default function RecentActiveUsersTable({ users }: { users: User[] }) {
                     {user.full_name || "N/A"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">{user.email}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-500 text-xs">
+                    {user.created_at ? new Date(user.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-emerald-400">
                     {user.last_active_at || "Just now"}
                   </td>
