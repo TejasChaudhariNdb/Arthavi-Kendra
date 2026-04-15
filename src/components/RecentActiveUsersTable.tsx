@@ -132,7 +132,7 @@ export default function RecentActiveUsersTable({ users }: { users: User[] }) {
                   <td className="px-6 py-4 whitespace-nowrap">{user.email}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500 text-xs">
                     {user.created_at
-                      ? new Date(user.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+                      ? new Date(user.created_at).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
                       : "—"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-emerald-400">
