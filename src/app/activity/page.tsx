@@ -15,6 +15,12 @@ function hoursSinceMidnightIST(): number {
   return Math.max(1, Math.ceil(hours));
 }
 
+/** Today's date string in IST (YYYY-MM-DD) for new-user detection */
+function todayISTString(): string {
+  const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+  return nowIST.toISOString().slice(0, 10);
+}
+
 export default async function ActivityPage() {
   const [dau, wau, mau, recentUsers] = await Promise.all([
     fetchMetricsDau(30),
@@ -23,7 +29,7 @@ export default async function ActivityPage() {
     fetchUsersWithFilters({ active_within_hours: hoursSinceMidnightIST(), limit: 100, sort_by: "last_active_at", sort_order: "desc" }),
   ]);
 
-  const todayIST    = new Date(Date.now() + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const todayIST    = todayISTString();
   const activeToday = recentUsers.length;
   const newToday    = recentUsers.filter((u: { created_at?: string }) => u.created_at?.startsWith(todayIST)).length;
   const returning   = activeToday - newToday;
