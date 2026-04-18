@@ -47,6 +47,7 @@ export default function UserDetailClient({
     all_holdings,
     recent_transactions,
     chats = [],
+    predictions = [],
   } = data;
   const [activeTab, setActiveTab] = useState<"overview" | "holdings" | "chats">(
     initialTab,
@@ -342,6 +343,43 @@ export default function UserDetailClient({
                   ) : (
                     <div className="text-gray-500 text-center py-4">
                       No recent transactions found.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Recent Predictions */}
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
+                <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide mb-6 flex items-center gap-2">
+                  <Activity size={16} /> Market Predictions
+                </h3>
+                <div className="space-y-3">
+                  {predictions && predictions.length > 0 ? (
+                    predictions.map((p: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="flex justify-between items-center p-3 border-b border-gray-800 last:border-0 hover:bg-gray-800/30 transition-colors">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-200 font-medium tracking-wide">
+                              Nifty 50
+                            </span>
+                            <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${p.prediction === 'BULL' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                              {p.prediction}
+                            </span>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Target: {p.target_date}
+                          </div>
+                        </div>
+                        <div className={`text-sm font-bold uppercase ${p.result === 'WON' ? 'text-emerald-400' : p.result === 'LOST' ? 'text-rose-400' : 'text-gray-500'}`}>
+                          {p.result}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-gray-500 text-center py-4">
+                      No market predictions found.
                     </div>
                   )}
                 </div>
