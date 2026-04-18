@@ -91,7 +91,9 @@ export default function UserDetailClient({
       const d = new Date();
       d.setDate(d.getDate() - i);
       const tzOffset = d.getTimezoneOffset() * 60000;
-      const localISOTime = new Date(d.getTime() - tzOffset).toISOString().split('T')[0];
+      const localISOTime = new Date(d.getTime() - tzOffset)
+        .toISOString()
+        .split("T")[0];
       chartData.push({
         date: localISOTime.slice(5, 10), // MM-DD
         fullDate: localISOTime,
@@ -224,7 +226,9 @@ export default function UserDetailClient({
                 </h3>
                 <div className="h-32 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={activityChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                    <BarChart
+                      data={activityChartData}
+                      margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                       <Tooltip
                         cursor={{ fill: "#374151" }}
                         contentStyle={{
@@ -234,12 +238,18 @@ export default function UserDetailClient({
                           fontSize: 12,
                           borderRadius: "0.5rem",
                         }}
-                        formatter={(value) => [value === 1 ? "Active" : "Inactive", "Status"]}
+                        formatter={(value) => [
+                          value === 1 ? "Active" : "Inactive",
+                          "Status",
+                        ]}
                         labelFormatter={(label) => `Date: ${label}`}
                       />
                       <Bar dataKey="active" radius={[2, 2, 0, 0]}>
                         {activityChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.active ? "#10b981" : "#1f2937"} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.active ? "#10b981" : "#1f2937"}
+                          />
                         ))}
                       </Bar>
                     </BarChart>
@@ -364,7 +374,8 @@ export default function UserDetailClient({
                             <span className="text-gray-200 font-medium tracking-wide">
                               Nifty 50
                             </span>
-                            <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${p.prediction === 'BULL' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                            <span
+                              className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${p.prediction === "BULL" ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"}`}>
                               {p.prediction}
                             </span>
                           </div>
@@ -372,7 +383,8 @@ export default function UserDetailClient({
                             Target: {p.target_date}
                           </div>
                         </div>
-                        <div className={`text-sm font-bold uppercase ${p.result === 'WON' ? 'text-emerald-400' : p.result === 'LOST' ? 'text-rose-400' : 'text-gray-500'}`}>
+                        <div
+                          className={`text-sm font-bold uppercase ${p.result === "WON" ? "text-emerald-400" : p.result === "LOST" ? "text-rose-400" : "text-gray-500"}`}>
                           {p.result}
                         </div>
                       </div>
