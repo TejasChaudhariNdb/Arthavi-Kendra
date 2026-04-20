@@ -18,6 +18,7 @@ export default async function UserDetailPage({
       fetchUserDetail(id),
       fetchUserActivity(id).catch(() => null), // Catch errors so page still works if tracking missing
     ]);
+    console.log(activity);
   } catch (e) {
     return (
       <div className="p-8 text-center text-red-500 bg-gray-900 border border-gray-800 rounded-xl">

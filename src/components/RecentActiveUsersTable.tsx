@@ -11,6 +11,7 @@ interface User {
   full_name: string | null;
   created_at: string;
   last_active_at: string | null;
+  total_active_days?: number;
   portfolio_count: number;
   total_value: number;
 }
@@ -25,7 +26,13 @@ function SortIcon({ col, sortKey, sortDir }: { col: SortKey; sortKey: SortKey | 
     : <ChevronDown size={12} className="inline ml-1 text-emerald-400" />;
 }
 
-export default function RecentActiveUsersTable({ users }: { users: User[] }) {
+export default function RecentActiveUsersTable({
+  users,
+  todayIST,
+}: {
+  users: User[];
+  todayIST: string;
+}) {
   const [sortKey, setSortKey] = useState<SortKey | null>("last_active_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -69,7 +76,6 @@ export default function RecentActiveUsersTable({ users }: { users: User[] }) {
   const thClass = "px-6 py-4 whitespace-nowrap text-xs cursor-pointer select-none hover:text-white transition-colors";
 
   // Count new users who joined today (IST)
-  const todayIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const newToday     = users.filter(u => u.created_at?.startsWith(todayIST)).length;
   const returning    = users.length - newToday;
 
@@ -110,6 +116,9 @@ export default function RecentActiveUsersTable({ users }: { users: User[] }) {
               <th className={thClass} onClick={() => handleSort("last_active_at")}>
                 Last Active <SortIcon col="last_active_at" sortKey={sortKey} sortDir={sortDir} />
               </th>
+              <th className="px-6 py-4 whitespace-nowrap text-xs">
+                Total Active Days
+              </th>
               <th className={`${thClass} text-right`} onClick={() => handleSort("total_value")}>
                 Value (INR) <SortIcon col="total_value" sortKey={sortKey} sortDir={sortDir} />
               </th>
@@ -119,7 +128,7 @@ export default function RecentActiveUsersTable({ users }: { users: User[] }) {
           <tbody className="divide-y divide-gray-800">
             {sorted.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                   No users active in the last 24 hours.
                 </td>
               </tr>
@@ -139,6 +148,9 @@ export default function RecentActiveUsersTable({ users }: { users: User[] }) {
                     {user.last_active_at
                       ? new Date(user.last_active_at).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
                       : "Just now"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-white font-medium">
+                    {user.total_active_days ?? 0}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right font-mono">
                     {user.total_value > 0 ? `₹${user.total_value.toLocaleString()}` : "-"}

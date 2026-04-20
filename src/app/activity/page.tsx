@@ -126,9 +126,8 @@ export default async function ActivityPage() {
             Loading recent users...
           </div>
         }>
-        <RecentActiveUsersTable users={recentUsers} />
+        <RecentActiveUsersTable users={recentUsers} todayIST={todayIST} />
       </Suspense>
     </div>
   );
 }
-

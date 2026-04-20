@@ -17,8 +17,6 @@ import {
 import {
   BarChart,
   Bar,
-  XAxis,
-  YAxis,
   Tooltip,
   ResponsiveContainer,
   Cell,
@@ -28,6 +26,27 @@ import ChatInbox from "@/components/ChatInbox";
 import StatsCard from "@/components/StatsCard";
 import AllocationChart from "@/components/AllocationChart";
 import { clsx } from "clsx";
+
+const TIMELINE_DAYS = 30;
+
+function formatUtcDate(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function parseActivityDate(value: string) {
+  if (!value) return null;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return formatUtcDate(parsed);
+}
 
 export default function UserDetailClient({
   data,
@@ -85,21 +104,34 @@ export default function UserDetailClient({
   // Activity Processing
   const processActivityData = () => {
     if (!activity || !activity.recent_activity_dates) return [];
-    const dates = activity.recent_activity_dates;
+
+    const dates = new Set(
+      activity.recent_activity_dates
+        .map((value: string) => parseActivityDate(value))
+        .filter(Boolean),
+    );
     const chartData = [];
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const tzOffset = d.getTimezoneOffset() * 60000;
-      const localISOTime = new Date(d.getTime() - tzOffset)
-        .toISOString()
-        .split("T")[0];
+    const today = new Date();
+    const utcToday = new Date(
+      Date.UTC(
+        today.getUTCFullYear(),
+        today.getUTCMonth(),
+        today.getUTCDate(),
+      ),
+    );
+
+    for (let i = TIMELINE_DAYS - 1; i >= 0; i--) {
+      const day = new Date(utcToday);
+      day.setUTCDate(utcToday.getUTCDate() - i);
+      const fullDate = formatUtcDate(day);
+
       chartData.push({
-        date: localISOTime.slice(5, 10), // MM-DD
-        fullDate: localISOTime,
-        active: dates.includes(localISOTime) ? 1 : 0,
+        date: fullDate.slice(5, 10),
+        fullDate,
+        active: dates.has(fullDate) ? 1 : 0,
       });
     }
+
     return chartData;
   };
   const activityChartData = processActivityData();
@@ -242,7 +274,10 @@ export default function UserDetailClient({
                           value === 1 ? "Active" : "Inactive",
                           "Status",
                         ]}
-                        labelFormatter={(label) => `Date: ${label}`}
+                        labelFormatter={(_, payload) => {
+                          const fullDate = payload?.[0]?.payload?.fullDate;
+                          return `Date: ${fullDate || "N/A"}`;
+                        }}
                       />
                       <Bar dataKey="active" radius={[2, 2, 0, 0]}>
                         {activityChartData.map((entry, index) => (
