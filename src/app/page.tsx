@@ -3,6 +3,7 @@ import { fetchStats, fetchGrowthData, fetchChats } from "@/lib/api";
 import AnalyticsOverview from "@/components/AnalyticsOverview";
 import StatsCard from "@/components/StatsCard";
 import GrowthChart from "@/components/GrowthChart";
+import { FamilyDynamicsSection } from "@/components/FamilyDynamicsSection";
 import {
   Users,
   Briefcase,
@@ -99,6 +100,16 @@ async function StatsSection() {
       />
     </div>
   );
+}
+
+async function FamilyDynamicsSummarySection() {
+  let stats;
+  try {
+    stats = await fetchStats();
+  } catch {
+    return <div className="text-red-500 mt-8">Failed to load family dynamics.</div>;
+  }
+  return <FamilyDynamicsSection stats={stats} />;
 }
 
 async function GrowthChartSection() {
@@ -383,6 +394,10 @@ export default function Dashboard() {
 
         <Suspense fallback={<StatsSkeleton />}>
           <StatsSection />
+        </Suspense>
+
+        <Suspense fallback={<div className="bg-gray-900 border border-gray-800 rounded-xl p-6 h-48 animate-pulse mt-8"></div>}>
+          <FamilyDynamicsSummarySection />
         </Suspense>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

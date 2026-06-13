@@ -13,6 +13,7 @@ import {
   Filter,
   Activity,
   CalendarDays,
+  Users,
 } from "lucide-react";
 import {
   BarChart,
@@ -67,6 +68,7 @@ export default function UserDetailClient({
     recent_transactions,
     chats = [],
     predictions = [],
+    profiles = [],
   } = data;
   const [activeTab, setActiveTab] = useState<"overview" | "holdings" | "chats">(
     initialTab,
@@ -435,6 +437,83 @@ export default function UserDetailClient({
 
             {/* Right Col */}
             <div className="space-y-6">
+              {/* Family Profiles Card */}
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
+                <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide mb-6 flex items-center gap-2">
+                  <Users size={16} className="text-emerald-400" /> Family Profiles
+                </h3>
+                <div className="space-y-4">
+                  {profiles.length > 0 ? (
+                    profiles.map((p: any) => {
+                      const relationColors: Record<string, { bg: string }> = {
+                        SELF: { bg: "bg-blue-900/30 text-blue-400" },
+                        SPOUSE: { bg: "bg-pink-900/30 text-pink-400" },
+                        MOTHER: { bg: "bg-purple-900/30 text-purple-400" },
+                        FATHER: { bg: "bg-indigo-900/30 text-indigo-400" },
+                        CHILD: { bg: "bg-emerald-900/30 text-emerald-400" },
+                        OTHER: { bg: "bg-gray-850 text-gray-400" },
+                      };
+                      const typeColors: Record<string, { bg: string }> = {
+                        INDIVIDUAL: { bg: "bg-amber-900/20 text-amber-400" },
+                        JOINT: { bg: "bg-teal-900/20 text-teal-400" },
+                        CUSTOM: { bg: "bg-violet-900/20 text-violet-400" },
+                      };
+                      const rel = relationColors[p.relation] || relationColors.OTHER;
+                      const typ = typeColors[p.profile_type] || { bg: "bg-gray-850 text-gray-400" };
+
+                      return (
+                        <div
+                          key={p.id}
+                          className="p-4 bg-gray-800/40 border border-gray-800 rounded-lg hover:border-emerald-500/20 hover:bg-gray-800/60 transition-all"
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-white font-semibold text-sm">{p.name}</span>
+                              {p.is_default && (
+                                <span className="text-[10px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                                  Default
+                                </span>
+                              )}
+                            </div>
+                            <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${rel.bg}`}>
+                              {p.relation}
+                            </span>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${typ.bg}`}>
+                              {p.profile_type}
+                            </span>
+                            {p.pan && (
+                              <span className="text-[10px] bg-gray-800/60 text-gray-300 px-2 py-0.5 rounded font-mono">
+                                PAN: {p.pan}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-850 text-center">
+                            <div>
+                              <div className="text-[10px] text-gray-500 uppercase">MFs</div>
+                              <div className="text-sm font-bold font-mono text-white">{p.portfolio_count}</div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] text-gray-500 uppercase">Stocks</div>
+                              <div className="text-sm font-bold font-mono text-white">{p.holding_count}</div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] text-gray-500 uppercase">Goals</div>
+                              <div className="text-sm font-bold font-mono text-white">{p.goal_count}</div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-gray-500 text-center py-4 text-xs">No family profiles linked.</div>
+                  )}
+                </div>
+              </div>
+
               {/* Top Holdings Preview */}
               <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
                 <div className="flex justify-between items-center mb-6">
