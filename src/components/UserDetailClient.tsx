@@ -14,7 +14,9 @@ import {
   Activity,
   CalendarDays,
   Users,
+  Trash2,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import {
   BarChart,
   Bar,
@@ -70,12 +72,28 @@ export default function UserDetailClient({
     predictions = [],
     profiles = [],
   } = data;
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"overview" | "holdings" | "chats">(
     initialTab,
   );
   const [selectedHoldingType, setSelectedHoldingType] = useState<
     "ALL" | "EQUITY" | "MUTUAL_FUND"
   >("ALL");
+  const [isDeleting, setIsDeleting] = useState<number | null>(null);
+
+  const handleDeletePortfolio = async (portfolioId: number) => {
+    setIsDeleting(portfolioId);
+    try {
+      const { deletePortfolio } = await import("@/lib/auth-client");
+      await deletePortfolio(portfolioId);
+      router.refresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete portfolio");
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
   const selectedChatId =
     initialChatId && chats.some((chat: any) => chat.id === initialChatId)
       ? initialChatId
@@ -318,10 +336,31 @@ export default function UserDetailClient({
                         }}
                         className="group cursor-pointer p-4 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-emerald-500/50 hover:bg-gray-800 transition-all">
                         <div className="flex justify-between items-start mb-2">
-                          <span
-                            className={`bg-gray-700 text-gray-300 text-xs px-2 py-0.5 rounded font-bold uppercase tracking-wider group-hover:bg-gray-600`}>
-                            {p.type}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`bg-gray-700 text-gray-300 text-xs px-2 py-0.5 rounded font-bold uppercase tracking-wider group-hover:bg-gray-600`}>
+                              {p.type === "MUTUAL_FUND" ? "Mutual Fund" : p.type}
+                            </span>
+                            {p.type === "MUTUAL_FUND" && (
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (window.confirm("Are you sure you want to delete this portfolio and all its schemes/transactions? This action cannot be undone.")) {
+                                    await handleDeletePortfolio(p.id);
+                                  }
+                                }}
+                                disabled={isDeleting !== null}
+                                className="p-1 text-gray-400 hover:text-red-500 hover:bg-gray-800 rounded transition-colors"
+                                title="Delete Portfolio"
+                              >
+                                {isDeleting === p.id ? (
+                                  <div className="w-3.5 h-3.5 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <Trash2 size={14} />
+                                )}
+                              </button>
+                            )}
+                          </div>
                           <span
                             className={`text-sm font-semibold ${p.profit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
                             {p.profit >= 0 ? "+" : ""}₹
@@ -346,6 +385,22 @@ export default function UserDetailClient({
                             </div>
                           </div>
                         </div>
+                        {p.type === "MUTUAL_FUND" && (
+                          <div className="mt-3 text-xs text-gray-400 space-y-1 border-t border-gray-800/80 pt-3">
+                            <div>
+                              <span className="font-semibold text-gray-500">Statement:</span>{" "}
+                              {p.statement_from && p.statement_to ? `${p.statement_from} to ${p.statement_to}` : "N/A"}
+                            </div>
+                            <div className="flex justify-between flex-wrap gap-x-2">
+                              <div>
+                                <span className="font-semibold text-gray-500">Type:</span> {p.cas_type || "N/A"} ({p.file_type || "N/A"})
+                              </div>
+                              <div>
+                                <span className="font-semibold text-gray-500">Uploaded:</span> {p.created_at || "N/A"}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                         <div className="mt-3 flex justify-end">
                           <span className="text-xs text-emerald-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                             View Holdings <ChevronRight size={12} />

@@ -53,6 +53,21 @@ export async function impersonateUser(userId: number) {
   return res.json();
 }
 
+export async function deletePortfolio(portfolioId: number) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/portfolios/${portfolioId}`, {
+    method: "DELETE",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => null);
+    throw new Error(errorData?.detail || "Failed to delete portfolio");
+  }
+  return res.json();
+}
+
 export async function updateStock(
   symbol: string,
   updates: Record<string, unknown>,
