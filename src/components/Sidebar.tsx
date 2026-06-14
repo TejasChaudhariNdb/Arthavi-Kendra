@@ -17,6 +17,7 @@ import {
   CandlestickChart,
   Activity,
   TrendingUp,
+  Sparkles,
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -32,6 +33,7 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
     { href: "/buy-signals", label: "Stocks Recommended", icon: CandlestickChart },
     { href: "/chats", label: "AI Chats", icon: MessageSquare },
     { href: "/notifications", label: "Notifications", icon: Bell },
+    { href: "/updates", label: "What's New", icon: Sparkles },
     { href: "/feedback", label: "Feedback", icon: MessageSquarePlus },
     { href: "/donations", label: "Donations", icon: Gift },
     { href: "/predictions", label: "Predictions", icon: TrendingUp },

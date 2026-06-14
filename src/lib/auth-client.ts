@@ -156,3 +156,64 @@ export async function exportSlippingUsersCsv(days: number = 5) {
   a.remove();
   window.URL.revokeObjectURL(url);
 }
+
+export async function fetchAdminUpdatesClient() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/updates`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch platform updates");
+  return res.json();
+}
+
+export async function createAdminUpdateClient(data: {
+  title: string;
+  description: string;
+  cta_text?: string;
+  cta_link?: string;
+  is_active: boolean;
+}) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/updates`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => null);
+    throw new Error(errData?.detail || "Failed to create update");
+  }
+  return res.json();
+}
+
+export async function updateAdminUpdateClient(
+  id: number,
+  data: {
+    title: string;
+    description: string;
+    cta_text?: string;
+    cta_link?: string;
+    is_active: boolean;
+  }
+) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/updates/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => null);
+    throw new Error(errData?.detail || "Failed to update platform announcement");
+  }
+  return res.json();
+}
