@@ -66,7 +66,7 @@ export default function RecentActiveUsersTable({
       const data = await impersonateUser(userId);
       if (data.access_token) {
         const userAppUrl = process.env.NEXT_PUBLIC_USER_APP_URL || "http://localhost:3000";
-        window.open(`${userAppUrl}/login?impersonate_token=${data.access_token}`, "_blank");
+        window.open(`${userAppUrl}/auth?impersonate_token=${data.access_token}`, "_blank");
       }
     } catch {
       alert("Failed to generate impersonation token.");
