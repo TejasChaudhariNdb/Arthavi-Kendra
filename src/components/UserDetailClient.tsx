@@ -160,6 +160,54 @@ export default function UserDetailClient({
     selectedHoldingType === "ALL" ? true : h.type === selectedHoldingType,
   );
 
+  // CRM Profile Insights calculations
+  const lastActiveDate = activity?.last_active_date ? new Date(activity.last_active_date) : null;
+  const daysSinceActive = lastActiveDate ? Math.floor((Date.now() - lastActiveDate.getTime()) / (1000 * 60 * 60 * 24)) : 999;
+
+  let engagementLevel = "Inactive";
+  let engagementColor = "text-gray-400 bg-gray-850";
+  if (activity?.total_active_days >= 12) {
+    engagementLevel = "Power User";
+    engagementColor = "text-emerald-400 bg-emerald-950/40";
+  } else if (activity?.total_active_days >= 3) {
+    engagementLevel = "Casual User";
+    engagementColor = "text-blue-400 bg-blue-950/40";
+  } else if (daysSinceActive >= 5 || activity?.total_active_days < 3) {
+    engagementLevel = "Churn Risk";
+    engagementColor = "text-rose-400 bg-rose-950/40";
+  }
+
+  let investorClass = "No Investments";
+  let investorColor = "text-gray-500 bg-gray-950";
+  if (user.total_value >= 1000000) {
+    investorClass = "Whale (₹10L+)";
+    investorColor = "text-amber-400 bg-amber-950/40";
+  } else if (user.total_value >= 100000) {
+    investorClass = "Mid-Tier (₹1L-10L)";
+    investorColor = "text-sky-400 bg-sky-950/40";
+  } else if (user.total_value > 0) {
+    investorClass = "Starter (<₹1L)";
+    investorColor = "text-indigo-400 bg-indigo-950/40";
+  }
+
+  const totalAssets = equityValue + mfValue;
+  let allocationStyle = "Balanced";
+  let allocationColor = "text-teal-400 bg-teal-950/40";
+  if (totalAssets > 0) {
+    const equityPct = (equityValue / totalAssets) * 100;
+    const mfPct = (mfValue / totalAssets) * 100;
+    if (equityPct >= 70) {
+      allocationStyle = "Equity Heavy";
+      allocationColor = "text-purple-400 bg-purple-950/40";
+    } else if (mfPct >= 70) {
+      allocationStyle = "Mutual Fund Heavy";
+      allocationColor = "text-pink-400 bg-pink-950/40";
+    }
+  } else {
+    allocationStyle = "Unallocated";
+    allocationColor = "text-gray-550 bg-gray-950";
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -186,7 +234,7 @@ export default function UserDetailClient({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-800">
+        <div className="flex bg-gray-900 p-1 rounded-lg shadow-inner">
           <button
             onClick={() => setActiveTab("overview")}
             className={clsx(
@@ -251,10 +299,65 @@ export default function UserDetailClient({
             />
           </div>
 
+          {/* CRM Profile Insights */}
+          <div className="bg-gray-900 rounded-xl p-6 shadow-lg shadow-black/20">
+            <h3 className="text-gray-400 font-medium text-xs uppercase tracking-wider mb-4 flex items-center gap-2">
+              <Users size={14} className="text-emerald-500" /> CRM Profile Insights
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="flex items-center justify-between p-4 bg-gray-950 rounded-xl shadow-inner">
+                <div>
+                  <span className="text-[10px] text-gray-550 font-bold uppercase tracking-wider block">Engagement</span>
+                  <span className="text-sm font-semibold text-white mt-1 block">Behavior Status</span>
+                </div>
+                <span className={`px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase ${engagementColor}`}>
+                  {engagementLevel}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-gray-950 rounded-xl shadow-inner">
+                <div>
+                  <span className="text-[10px] text-gray-550 font-bold uppercase tracking-wider block">Net Assets</span>
+                  <span className="text-sm font-semibold text-white mt-1 block">Investor Bracket</span>
+                </div>
+                <span className={`px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase ${investorColor}`}>
+                  {investorClass}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-gray-950 rounded-xl shadow-inner">
+                <div>
+                  <span className="text-[10px] text-gray-550 font-bold uppercase tracking-wider block">Portfolio Mix</span>
+                  <span className="text-sm font-semibold text-white mt-1 block">Allocation Strategy</span>
+                </div>
+                <span className={`px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase ${allocationColor}`}>
+                  {allocationStyle}
+                </span>
+              </div>
+            </div>
+
+            {(!user.notifications_enabled || portfolios.length === 0) && (
+              <div className="mt-4 p-3.5 bg-amber-950/25 rounded-lg flex flex-col gap-1.5 text-xs text-amber-300">
+                {!user.notifications_enabled && (
+                  <div className="flex items-center gap-1.5 font-medium">
+                    <span>⚠️</span>
+                    <span><strong>Notifications Disabled:</strong> This user will miss critical SMS/Push alerts & price refresh updates.</span>
+                  </div>
+                )}
+                {portfolios.length === 0 && (
+                  <div className="flex items-center gap-1.5 font-medium">
+                    <span>⚠️</span>
+                    <span><strong>No Portfolios Uploaded:</strong> This is a cold/empty account. Needs CAS import guidance.</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Activity Section */}
           {activity && (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md flex flex-col lg:flex-row gap-6">
-              <div className="lg:w-1/4 flex flex-col justify-center space-y-4 border-b lg:border-b-0 lg:border-r border-gray-800 pb-6 lg:pb-0 lg:pr-6">
+            <div className="bg-gray-900 rounded-xl p-6 shadow-lg shadow-black/20 flex flex-col lg:flex-row gap-6">
+              <div className="lg:w-1/4 flex flex-col justify-center space-y-4 pb-6 lg:pb-0 lg:pr-6 lg:mr-6">
                 <div>
                   <h3 className="text-gray-400 font-medium text-sm flex items-center gap-2 mb-1">
                     <Activity size={16} /> Total Active Days
@@ -321,7 +424,7 @@ export default function UserDetailClient({
                 <AllocationChart data={allocationData} />
               )}
 
-              <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
+              <div className="bg-gray-900 rounded-xl p-6 shadow-lg shadow-black/20">
                 <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide mb-6 flex items-center gap-2">
                   <Wallet size={16} /> Portfolios Breakdown
                 </h3>
@@ -334,7 +437,7 @@ export default function UserDetailClient({
                           setSelectedHoldingType(p.type);
                           setActiveTab("holdings");
                         }}
-                        className="group cursor-pointer p-4 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-emerald-500/50 hover:bg-gray-800 transition-all">
+                        className="group cursor-pointer p-4 bg-gray-850/50 rounded-xl hover:bg-gray-805 transition-all shadow-md">
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex items-center gap-2">
                             <span
@@ -386,7 +489,7 @@ export default function UserDetailClient({
                           </div>
                         </div>
                         {p.type === "MUTUAL_FUND" && (
-                          <div className="mt-3 text-xs text-gray-400 space-y-1 border-t border-gray-800/80 pt-3">
+                          <div className="mt-3 text-xs text-gray-400 space-y-1 pt-3">
                             <div>
                               <span className="font-semibold text-gray-500">Statement:</span>{" "}
                               {p.statement_from && p.statement_to ? `${p.statement_from} to ${p.statement_to}` : "N/A"}
@@ -417,7 +520,7 @@ export default function UserDetailClient({
               </div>
 
               {/* Recent Transactions */}
-              <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
+              <div className="bg-gray-900 rounded-xl p-6 shadow-lg shadow-black/20">
                 <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide mb-6 flex items-center gap-2">
                   <History size={16} /> Recent Transactions
                 </h3>
@@ -426,7 +529,7 @@ export default function UserDetailClient({
                     recent_transactions.map((tx: any, idx: number) => (
                       <div
                         key={idx}
-                        className="flex justify-between items-center p-3 border-b border-gray-800 last:border-0 hover:bg-gray-800/30 transition-colors">
+                        className="flex justify-between items-center p-3 hover:bg-gray-800/30 transition-colors">
                         <div>
                           <div className="text-gray-200 font-medium">
                             {tx.name}
@@ -451,7 +554,7 @@ export default function UserDetailClient({
               </div>
 
               {/* Recent Predictions */}
-              <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
+              <div className="bg-gray-900 rounded-xl p-6 shadow-lg shadow-black/20">
                 <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide mb-6 flex items-center gap-2">
                   <Activity size={16} /> Market Predictions
                 </h3>
@@ -460,7 +563,7 @@ export default function UserDetailClient({
                     predictions.map((p: any, idx: number) => (
                       <div
                         key={idx}
-                        className="flex justify-between items-center p-3 border-b border-gray-800 last:border-0 hover:bg-gray-800/30 transition-colors">
+                        className="flex justify-between items-center p-3 hover:bg-gray-800/30 transition-colors">
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="text-gray-200 font-medium tracking-wide">
@@ -493,7 +596,7 @@ export default function UserDetailClient({
             {/* Right Col */}
             <div className="space-y-6">
               {/* Family Profiles Card */}
-              <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
+              <div className="bg-gray-900 rounded-xl p-6 shadow-lg shadow-black/20">
                 <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide mb-6 flex items-center gap-2">
                   <Users size={16} className="text-emerald-400" /> Family Profiles
                 </h3>
@@ -519,7 +622,7 @@ export default function UserDetailClient({
                       return (
                         <div
                           key={p.id}
-                          className="p-4 bg-gray-800/40 border border-gray-800 rounded-lg hover:border-emerald-500/20 hover:bg-gray-800/60 transition-all"
+                          className="p-4 bg-gray-800/40 rounded-xl hover:bg-gray-800/60 transition-all shadow"
                         >
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex items-center gap-2">
@@ -546,7 +649,7 @@ export default function UserDetailClient({
                             )}
                           </div>
 
-                          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-850 text-center">
+                          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-850/20 text-center">
                             <div>
                               <div className="text-[10px] text-gray-500 uppercase">MFs</div>
                               <div className="text-sm font-bold font-mono text-white">{p.portfolio_count}</div>
@@ -570,7 +673,7 @@ export default function UserDetailClient({
               </div>
 
               {/* Top Holdings Preview */}
-              <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
+              <div className="bg-gray-900 rounded-xl p-6 shadow-lg shadow-black/20">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide flex items-center gap-2">
                     <TrendingUp size={16} /> Top Holdings
@@ -586,7 +689,7 @@ export default function UserDetailClient({
                     top_holdings.map((h: any, idx: number) => (
                       <div
                         key={idx}
-                        className="flex justify-between items-center p-3 border-b border-gray-800 last:border-0 hover:bg-gray-800/30 transition-colors rounded-lg">
+                        className="flex justify-between items-center p-3 hover:bg-gray-800/30 transition-colors rounded-lg">
                         <div className="flex items-center gap-3 overflow-hidden">
                           <div
                             className={`w-8 h-8 rounded shrink-0 flex items-center justify-center text-xs font-bold ${h.type === "EQUITY" ? "bg-indigo-900/50 text-indigo-300" : "bg-emerald-900/50 text-emerald-300"}`}>
@@ -614,7 +717,7 @@ export default function UserDetailClient({
               </div>
 
               {/* Chat CTA */}
-              <div className="bg-indigo-900/20 border border-indigo-500/30 rounded-xl p-6">
+              <div className="bg-indigo-950/30 rounded-xl p-6 shadow-md">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">
                     <MessageSquare size={20} />
@@ -638,7 +741,7 @@ export default function UserDetailClient({
       {/* HOLDINGS TAB */}
       {activeTab === "holdings" && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="flex items-center gap-4 bg-gray-900 p-4 rounded-xl border border-gray-800">
+          <div className="flex items-center gap-4 bg-gray-900 p-4 rounded-xl shadow-md">
             <div className="flex items-center gap-2 text-gray-400">
               <Filter size={18} />
               <span className="text-sm font-medium">Filter Type:</span>
@@ -660,7 +763,7 @@ export default function UserDetailClient({
             </div>
           </div>
 
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-md">
+          <div className="hidden md:block bg-gray-900 rounded-xl overflow-hidden shadow-lg shadow-black/25">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm text-gray-400">
                 <thead className="bg-gray-950 text-gray-200 uppercase font-medium">
@@ -673,7 +776,7 @@ export default function UserDetailClient({
                     <th className="px-6 py-4 text-right">Current Value</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800">
+                <tbody className="divide-y divide-gray-850/20">
                   {filteredHoldings.length > 0 ? (
                     filteredHoldings.map((h: any, idx: number) => (
                       <tr
@@ -719,6 +822,49 @@ export default function UserDetailClient({
                 </tbody>
               </table>
             </div>
+          </div>
+
+          {/* Mobile Card List for Holdings */}
+          <div className="grid grid-cols-1 gap-4 md:hidden">
+            {filteredHoldings.map((h: any, idx: number) => (
+              <div key={idx} className="bg-gray-900 rounded-xl p-4 space-y-3 shadow-md">
+                <div className="flex justify-between items-start">
+                  <h4 className="font-bold text-white text-sm leading-snug max-w-[70%]">{h.name}</h4>
+                  <span className={clsx(
+                    "px-2 py-0.5 rounded text-[9px] font-bold uppercase",
+                    h.type === "EQUITY"
+                      ? "bg-indigo-900/50 text-indigo-300"
+                      : "bg-emerald-900/50 text-emerald-300",
+                  )}>
+                    {h.type === "EQUITY" ? "Stock" : "Mutual Fund"}
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-xs border-t border-gray-850/20 pt-2.5">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Qty:</span>
+                    <span className="font-mono text-gray-300">{h.quantity?.toFixed(2) || "-"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Avg Price:</span>
+                    <span className="font-mono text-gray-300">₹{h.avg_price?.toLocaleString() || "-"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">LTP:</span>
+                    <span className="font-mono text-gray-300">₹{h.ltp?.toLocaleString() || "-"}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold">
+                    <span className="text-gray-400">Value:</span>
+                    <span className="font-mono text-white">₹{h.value.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {filteredHoldings.length === 0 && (
+              <div className="p-8 text-center text-gray-500 bg-gray-900 rounded-xl shadow-inner">
+                No holdings found for selected filter.
+              </div>
+            )}
           </div>
         </div>
       )}

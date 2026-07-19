@@ -17,7 +17,7 @@ const StatsCard: React.FC<StatsCardProps> = ({
   trendUp,
 }) => {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md stats-card">
+    <div className="bg-gray-900 rounded-xl p-6 shadow-lg shadow-black/15 stats-card">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide">
           {label}

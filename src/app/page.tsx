@@ -20,11 +20,11 @@ import Link from "next/link";
 
 function StatsSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
       {[1, 2, 3, 4, 5].map((i) => (
         <div
           key={i}
-          className="bg-gray-900 border border-gray-800 rounded-xl p-6 h-[120px] animate-pulse"></div>
+          className="bg-gray-900 rounded-xl p-6 h-[120px] animate-pulse"></div>
       ))}
     </div>
   );
@@ -32,19 +32,19 @@ function StatsSkeleton() {
 
 function ChartSkeleton() {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl w-full h-[400px] animate-pulse"></div>
+    <div className="bg-gray-900 rounded-xl w-full h-[400px] animate-pulse"></div>
   );
 }
 
 function SnapshotSkeleton() {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 min-h-96 animate-pulse"></div>
+    <div className="bg-gray-900 rounded-xl p-6 min-h-96 animate-pulse"></div>
   );
 }
 
 function ChatsSkeleton() {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md mt-8">
+    <div className="bg-gray-900 rounded-xl p-6 shadow-lg shadow-black/20 mt-8">
       <div className="h-6 w-48 bg-gray-800 rounded animate-pulse mb-6"></div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => (
@@ -65,7 +65,7 @@ async function StatsSection() {
     return <div className="text-red-500">Failed to load stats.</div>;
   }
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
       <StatsCard
         label="Total Users"
         value={stats.totalUsers}
@@ -188,12 +188,12 @@ async function OperatorSnapshotSection() {
   ].slice(0, 3);
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md min-h-96">
+    <div className="bg-gray-900 rounded-xl p-6 shadow-lg shadow-black/25 min-h-96">
       <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide mb-4">
         Operator Snapshot
       </h3>
       <div className="space-y-3">
-        <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-800">
+        <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg shadow-sm">
           <div className="flex items-center gap-3">
             <TrendingUp className="text-emerald-400" size={18} />
             <span className="text-sm text-gray-300">Signups (30d)</span>
@@ -202,7 +202,7 @@ async function OperatorSnapshotSection() {
             {weeklySignups}
           </span>
         </div>
-        <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-800">
+        <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg shadow-sm">
           <div className="flex items-center gap-3">
             <Users className="text-blue-400" size={18} />
             <span className="text-sm text-gray-300">Activation (Proxy)</span>
@@ -211,7 +211,7 @@ async function OperatorSnapshotSection() {
             {activationProxyPct.toFixed(0)}%
           </span>
         </div>
-        <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-800">
+        <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg shadow-sm">
           <div className="flex items-center gap-3">
             <Activity className="text-yellow-400" size={18} />
             <span className="text-sm text-gray-300">DAU / Users</span>
@@ -220,7 +220,7 @@ async function OperatorSnapshotSection() {
             {dauPct.toFixed(0)}%
           </span>
         </div>
-        <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-800">
+        <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg shadow-sm">
           <div className="flex items-center gap-3">
             <Bell className="text-indigo-400" size={18} />
             <span className="text-sm text-gray-300">Notif Opt-In</span>
@@ -250,34 +250,34 @@ async function OperatorSnapshotSection() {
             ))}
           </div>
         )}
-        <div className="pt-2 border-t border-gray-800 space-y-2">
+        <div className="pt-2 border-t border-gray-850/20 space-y-2">
           <p className="text-xs text-gray-500 uppercase tracking-wide">
             Quick Actions
           </p>
           <div className="flex flex-wrap gap-2">
             <Link
               href="/users"
-              className="text-xs px-2.5 py-1.5 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors inline-flex items-center gap-1">
+              className="text-xs px-2.5 py-1.5 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors inline-flex items-center gap-1 shadow-sm">
               Users <ExternalLink size={12} />
             </Link>
             <Link
               href="/chats"
-              className="text-xs px-2.5 py-1.5 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors inline-flex items-center gap-1">
+              className="text-xs px-2.5 py-1.5 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors inline-flex items-center gap-1 shadow-sm">
               AI Chats <ExternalLink size={12} />
             </Link>
             <Link
               href="/feedback"
-              className="text-xs px-2.5 py-1.5 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors inline-flex items-center gap-1">
+              className="text-xs px-2.5 py-1.5 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors inline-flex items-center gap-1 shadow-sm">
               Feedback <ExternalLink size={12} />
             </Link>
             <Link
               href="/notifications"
-              className="text-xs px-2.5 py-1.5 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors inline-flex items-center gap-1">
+              className="text-xs px-2.5 py-1.5 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors inline-flex items-center gap-1 shadow-sm">
               Notifications <ExternalLink size={12} />
             </Link>
           </div>
         </div>
-        <div className="pt-2 border-t border-gray-800 space-y-2">
+        <div className="pt-2 border-t border-gray-850/20 space-y-2">
           <p className="text-xs text-gray-500 uppercase tracking-wide">
             Today Focus
           </p>
@@ -308,7 +308,7 @@ async function RecentChatsSection() {
   }
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md mt-8">
+    <div className="bg-gray-900 rounded-xl p-6 shadow-lg shadow-black/25 mt-8">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide flex items-center gap-2">
           <MessageSquare size={16} /> Recent AI Conversations
@@ -332,7 +332,7 @@ async function RecentChatsSection() {
               key={chat.id}
               href={`/users/${chat.user?.id ?? ""}?tab=chats&chatId=${chat.id}`}
               className="block group">
-              <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-800 group-hover:border-emerald-500/30 group-hover:bg-gray-800 transition-all h-full flex flex-col">
+              <div className="p-4 bg-gray-800/50 rounded-xl group-hover:bg-gray-800 transition-all h-full flex flex-col shadow-md">
                 <div className="flex justify-between items-start mb-2">
                   <span className="text-xs text-emerald-400 font-bold uppercase tracking-wider bg-emerald-900/20 px-2 py-1 rounded">
                     {chat.user?.name || "Unknown User"}
@@ -370,7 +370,7 @@ export default function Dashboard() {
 
   return (
     <div>
-      <header className="mb-8 flex justify-between items-center">
+      <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white tracking-tight">
             Dashboard Overview
@@ -384,7 +384,7 @@ export default function Dashboard() {
         </div>
         <Link
           href="/users"
-          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors self-start sm:self-auto">
           Manage Users <ArrowRight size={16} />
         </Link>
       </header>
@@ -396,7 +396,7 @@ export default function Dashboard() {
           <StatsSection />
         </Suspense>
 
-        <Suspense fallback={<div className="bg-gray-900 border border-gray-800 rounded-xl p-6 h-48 animate-pulse mt-8"></div>}>
+        <Suspense fallback={<div className="bg-gray-900 rounded-xl p-6 h-48 animate-pulse mt-8"></div>}>
           <FamilyDynamicsSummarySection />
         </Suspense>
 

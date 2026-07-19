@@ -1,8 +1,16 @@
-import BuyIdeasPanel from "@/components/BuyIdeasPanel";
+import { fetchBuyIdeas } from "@/lib/api";
+import BuyIdeasPanelClient from "@/components/BuyIdeasPanelClient";
 
 export const dynamic = "force-dynamic";
 
-export default function BuySignalsPage() {
+export default async function BuySignalsPage() {
+  let buyIdeas = null;
+  try {
+    buyIdeas = await fetchBuyIdeas();
+  } catch (error) {
+    console.error("Failed to fetch buy ideas", error);
+  }
+
   return (
     <div className="space-y-6">
       <header>
@@ -14,7 +22,13 @@ export default function BuySignalsPage() {
         </p>
       </header>
 
-      <BuyIdeasPanel />
+      {buyIdeas ? (
+        <BuyIdeasPanelClient initialData={buyIdeas} />
+      ) : (
+        <div className="text-red-550 bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
+          Failed to load today&apos;s buy signals. Ensure backend is running.
+        </div>
+      )}
     </div>
   );
 }

@@ -9,11 +9,13 @@ import {
   ChevronDown,
   ChevronsUpDown,
   ExternalLink,
-  MoreVertical,
   Bell,
   BellOff,
   Download,
   UserMinus,
+  SlidersHorizontal,
+  Eye,
+  LogIn,
 } from "lucide-react";
 import { exportUsersCsv, exportSlippingUsersCsv, impersonateUser } from "@/lib/auth-client";
 
@@ -51,49 +53,6 @@ interface SortConfig {
   key: SortKey;
   direction: SortDirection;
 }
-
-const ActionMenu = ({
-  user,
-  onImpersonate,
-}: {
-  user: User;
-  onImpersonate: (id: number) => void;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors">
-        <MoreVertical size={16} />
-      </button>
-
-      {isOpen && (
-        <>
-          <div
-            className="fixed inset-0 z-10 cursor-default"
-            onClick={() => setIsOpen(false)}></div>
-          <div className="absolute right-0 mt-1 w-48 bg-gray-950 border border-gray-800 rounded-lg shadow-xl z-20 py-1 overflow-hidden">
-            <Link
-              href={`/users/${user.id}`}
-              className="block px-4 py-3 hover:bg-gray-800 text-sm text-gray-300 transition-colors">
-              View Details
-            </Link>
-            <button
-              onClick={() => {
-                onImpersonate(user.id);
-                setIsOpen(false);
-              }}
-              className="w-full text-left px-4 py-3 hover:bg-gray-800 text-sm text-purple-400 font-medium transition-colors flex items-center gap-2">
-              <ExternalLink size={14} /> Login as User
-            </button>
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
 
 const SortIcon = ({
   sortConfig,
@@ -136,6 +95,19 @@ export default function UsersTableClient({
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exportingSlipping, setExportingSlipping] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (notificationsFilter) count++;
+    if (portfolioFilter) count++;
+    if (minValueFilter) count++;
+    if (atRiskOnly) count++;
+    if (active24Only) count++;
+    if (sortBy !== "created_at") count++;
+    if (sortOrder !== "desc") count++;
+    return count;
+  }, [notificationsFilter, portfolioFilter, minValueFilter, atRiskOnly, active24Only, sortBy, sortOrder]);
 
   const handleSort = (key: SortKey) => {
     let direction: SortDirection = "asc";
@@ -239,104 +211,159 @@ export default function UsersTableClient({
   return (
     <div className="space-y-4">
       {/* Search + Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
-        <div className="relative flex-1">
-          <Search
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-            size={18}
-          />
-          <input
-            type="text"
-            placeholder="Search by name or email..."
-            className="w-full bg-gray-900 border border-gray-800 rounded-lg pl-10 pr-4 py-2 text-white focus:outline-none focus:border-emerald-500 transition-colors"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <div className="lg:col-span-2">
-          <select
-            value={notificationsFilter}
-            onChange={(e) => setNotificationsFilter(e.target.value)}
-            className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 transition-colors">
-            <option value="">All Notifications</option>
-            <option value="on">Notifications On</option>
-            <option value="off">Notifications Off</option>
-          </select>
-        </div>
-        <div className="lg:col-span-2">
-          <select
-            value={portfolioFilter}
-            onChange={(e) => setPortfolioFilter(e.target.value)}
-            className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 transition-colors">
-            <option value="">All Portfolios</option>
-            <option value="yes">Has Portfolio</option>
-            <option value="no">No Portfolio</option>
-          </select>
-        </div>
-        <div className="lg:col-span-2">
-          <input
-            type="number"
-            min={0}
-            value={minValueFilter}
-            onChange={(e) => setMinValueFilter(e.target.value)}
-            placeholder="Min value (INR)"
-            className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 transition-colors"
-          />
-        </div>
-        <div className="lg:col-span-2 flex items-center gap-2">
-          <label className="inline-flex items-center gap-2 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={atRiskOnly}
-              onChange={(e) => setAtRiskOnly(e.target.checked)}
-              className="rounded border-gray-700 bg-gray-900 text-emerald-500 focus:ring-emerald-500"
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 items-center">
+          <div className="relative flex-1 w-full">
+            <Search
+              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
+              size={20}
             />
-            At-Risk Only
-          </label>
-        </div>
-        <div className="lg:col-span-2 flex items-center gap-2">
-          <label className="inline-flex items-center gap-2 text-sm text-gray-300">
             <input
-              type="checkbox"
-              checked={active24Only}
-              onChange={(e) => setActive24Only(e.target.checked)}
-              className="rounded border-gray-700 bg-gray-900 text-emerald-500 focus:ring-emerald-500"
+              type="text"
+              placeholder="Search by name or email..."
+              className="w-full bg-gray-900 rounded-xl pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-base md:text-lg transition-all shadow-md"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  applyFilters();
+                }
+              }}
             />
-            Active (24h)
-          </label>
+          </div>
+          <div className="flex gap-2 w-full sm:w-auto shrink-0">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
+                showFilters || activeFiltersCount > 0
+                  ? "bg-indigo-950/60 text-indigo-400 shadow-inner"
+                : "bg-gray-900 text-gray-300 hover:text-white hover:bg-gray-800 shadow-sm"
+              }`}>
+              <SlidersHorizontal size={18} />
+              <span>Filters</span>
+              {activeFiltersCount > 0 && (
+                <span className="flex items-center justify-center bg-emerald-500 text-gray-950 font-bold text-xs rounded-full h-5 w-5 animate-in zoom-in-50 duration-200">
+                  {activeFiltersCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={applyFilters}
+              className="flex-1 sm:flex-none px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-all shadow-md shadow-emerald-950/25 cursor-pointer">
+              Search
+            </button>
+          </div>
         </div>
-        <div className="lg:col-span-2">
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 transition-colors">
-            <option value="created_at">Sort: Joined</option>
-            <option value="last_active_at">Sort: Last Active</option>
-            <option value="portfolio_count">Sort: Portfolios</option>
-            <option value="total_value">Sort: Total Value</option>
-          </select>
-        </div>
-        <div className="lg:col-span-2">
-          <select
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value)}
-            className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 transition-colors">
-            <option value="desc">Order: Desc</option>
-            <option value="asc">Order: Asc</option>
-          </select>
-        </div>
-        <div className="lg:col-span-2 flex gap-2">
-          <button
-            onClick={applyFilters}
-            className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm transition-colors">
-            Apply
-          </button>
-          <button
-            onClick={clearFilters}
-            className="px-3 py-2 rounded-lg bg-gray-900 border border-gray-800 text-gray-300 hover:text-white hover:bg-gray-800 text-sm transition-colors">
-            Clear
-          </button>
-        </div>
+
+        {showFilters && (
+          <div className="bg-gray-900/60 rounded-xl p-5 mt-1 animate-in slide-in-from-top-3 duration-200 shadow-lg shadow-black/25">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {/* Notifications */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Notifications</label>
+                <select
+                  value={notificationsFilter}
+                  onChange={(e) => setNotificationsFilter(e.target.value)}
+                  className="w-full bg-gray-955 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-emerald-500/35 transition-colors">
+                  <option value="">All Notifications</option>
+                  <option value="on">Notifications On</option>
+                  <option value="off">Notifications Off</option>
+                </select>
+              </div>
+
+              {/* Portfolios */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Portfolios</label>
+                <select
+                  value={portfolioFilter}
+                  onChange={(e) => setPortfolioFilter(e.target.value)}
+                  className="w-full bg-gray-955 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-emerald-500/35 transition-colors">
+                  <option value="">All Portfolios</option>
+                  <option value="yes">Has Portfolio</option>
+                  <option value="no">No Portfolio</option>
+                </select>
+              </div>
+
+              {/* Min Value */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Min Value (INR)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={minValueFilter}
+                  onChange={(e) => setMinValueFilter(e.target.value)}
+                  placeholder="e.g. 50000"
+                  className="w-full bg-gray-955 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-emerald-500/35 transition-colors"
+                />
+              </div>
+
+              {/* Sort By */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sort By</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full bg-gray-955 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-emerald-500/35 transition-colors">
+                  <option value="created_at">Joined Date</option>
+                  <option value="last_active_at">Last Active</option>
+                  <option value="portfolio_count">Portfolios Count</option>
+                  <option value="total_value">Total Value</option>
+                </select>
+              </div>
+
+              {/* Sort Order */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sort Order</label>
+                <select
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                  className="w-full bg-gray-955 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-emerald-500/35 transition-colors">
+                  <option value="desc">Descending</option>
+                  <option value="asc">Ascending</option>
+                </select>
+              </div>
+
+              {/* Status Flags */}
+              <div className="sm:col-span-2 lg:col-span-3 xl:col-span-1 flex flex-row sm:items-end gap-6 pt-3 sm:pt-0 pb-1">
+                <label className="inline-flex items-center gap-2.5 text-sm text-gray-300 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={atRiskOnly}
+                    onChange={(e) => setAtRiskOnly(e.target.checked)}
+                    className="rounded border-gray-700 bg-gray-950 text-emerald-500 focus:ring-emerald-500 h-4.5 w-4.5 transition-colors"
+                  />
+                  At-Risk Only
+                </label>
+
+                <label className="inline-flex items-center gap-2.5 text-sm text-gray-300 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={active24Only}
+                    onChange={(e) => setActive24Only(e.target.checked)}
+                    className="rounded border-gray-700 bg-gray-950 text-emerald-500 focus:ring-emerald-500 h-4.5 w-4.5 transition-colors"
+                  />
+                  Active (24h)
+                </label>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2.5 mt-5 pt-4 border-t border-gray-850/20">
+              <button
+                onClick={clearFilters}
+                className="px-4 py-2 rounded-lg bg-gray-955 text-gray-400 hover:text-white hover:bg-gray-800 text-xs font-semibold transition-colors cursor-pointer shadow-sm">
+                Reset Filters
+              </button>
+              <button
+                onClick={() => {
+                  applyFilters();
+                  setShowFilters(false);
+                }}
+                className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-colors shadow cursor-pointer">
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
@@ -353,20 +380,21 @@ export default function UsersTableClient({
         <button
           onClick={handleExportSlipping}
           disabled={exportingSlipping}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-rose-900/30 border border-rose-800/50 text-rose-400 hover:text-rose-300 hover:bg-rose-900/50 transition-colors disabled:opacity-60 text-sm font-medium">
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-rose-950/40 text-rose-400 hover:text-rose-300 hover:bg-rose-900/50 transition-colors disabled:opacity-60 text-sm font-semibold shadow">
           <UserMinus size={16} />
           {exportingSlipping ? "Exporting..." : "Export Churn Risk (5+ Days)"}
         </button>
         <button
           onClick={handleExport}
           disabled={exporting}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gray-900 border border-gray-800 text-gray-300 hover:text-white hover:bg-gray-800 transition-colors disabled:opacity-60 text-sm font-medium">
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-gray-300 hover:text-white hover:bg-gray-800 transition-colors disabled:opacity-60 text-sm font-semibold shadow">
           <Download size={16} />
           {exporting ? "Exporting..." : "Export All to CSV"}
         </button>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-sm">
+      {/* Desktop Table View */}
+      <div className="hidden md:block bg-gray-900 rounded-xl overflow-hidden shadow-lg shadow-black/25">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-gray-400">
             <thead className="bg-gray-950 text-gray-200 uppercase font-medium">
@@ -427,14 +455,20 @@ export default function UsersTableClient({
                     <SortIcon sortConfig={sortConfig} columnKey="total_value" />
                   </div>
                 </th>
-                <th className="px-6 py-4 whitespace-nowrap">Actions</th>
+                <th className="px-6 py-4 whitespace-nowrap text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-800">
+            <tbody className="divide-y divide-gray-850/20">
               {filteredUsers.map((user) => (
                 <tr
                   key={user.id}
-                  className="hover:bg-gray-800/50 transition-colors">
+                  onClick={(e) => {
+                    const target = e.target as HTMLElement;
+                    if (!target.closest("button") && !target.closest("a")) {
+                      router.push(`/users/${user.id}`);
+                    }
+                  }}
+                  className="hover:bg-gray-850 transition-colors cursor-pointer">
                   {/* ID */}
                   <td className="px-4 py-4 whitespace-nowrap">
                     <span className="font-mono text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded">
@@ -458,11 +492,11 @@ export default function UsersTableClient({
                   {/* Notifications */}
                   <td className="px-6 py-4 text-center whitespace-nowrap">
                     {user.notifications_enabled ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-900/40 text-emerald-400 border border-emerald-800">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-950/60 text-emerald-400">
                         <Bell size={11} /> On
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-800 text-gray-500 border border-gray-700">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-800 text-gray-500">
                         <BellOff size={11} /> Off
                       </span>
                     )}
@@ -486,7 +520,23 @@ export default function UsersTableClient({
                   </td>
                   {/* Actions */}
                   <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <ActionMenu user={user} onImpersonate={handleImpersonate} />
+                    <div className="flex items-center gap-2 justify-end">
+                      <Link
+                        href={`/users/${user.id}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-750 text-xs text-gray-200 font-semibold transition-colors cursor-pointer shadow-sm">
+                        <Eye size={12} />
+                        View
+                      </Link>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleImpersonate(user.id);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-950/40 hover:bg-purple-900/50 text-xs text-purple-300 font-semibold transition-colors cursor-pointer shadow-sm">
+                        <LogIn size={12} />
+                        Login
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -495,6 +545,91 @@ export default function UsersTableClient({
         </div>
         {filteredUsers.length === 0 && (
           <div className="p-8 text-center text-gray-500">
+            No users found matching your search.
+          </div>
+        )}
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {filteredUsers.map((user) => (
+          <div
+            key={user.id}
+            onClick={(e) => {
+              const target = e.target as HTMLElement;
+              if (!target.closest("button") && !target.closest("a")) {
+                router.push(`/users/${user.id}`);
+              }
+            }}
+            className="bg-gray-900 rounded-xl p-5 space-y-4 hover:bg-gray-850 transition-all cursor-pointer shadow-md shadow-black/15">
+            {/* Header */}
+            <div className="flex justify-between items-start">
+              <div className="min-w-0">
+                <h3 className="font-bold text-white text-base truncate">
+                  {user.full_name || "N/A"}
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5 truncate">{user.email}</p>
+              </div>
+              <span className="font-mono text-[10px] text-gray-400 bg-gray-955 px-2 py-0.5 rounded shrink-0">
+                #{user.id}
+              </span>
+            </div>
+
+            {/* Metrics */}
+            <div className="grid grid-cols-3 gap-2 bg-gray-955/60 p-3 rounded-lg text-center shadow-inner">
+              <div>
+                <div className="text-[10px] text-gray-550 font-semibold uppercase tracking-wider">Portfolios</div>
+                <div className="text-sm font-bold text-white font-mono mt-0.5">{user.portfolio_count}</div>
+              </div>
+              <div>
+                <div className="text-[10px] text-gray-550 font-semibold uppercase tracking-wider">Value</div>
+                <div className="text-sm font-bold text-emerald-400 font-mono mt-0.5">
+                  {user.total_value > 0 ? `₹${Math.round(user.total_value).toLocaleString("en-IN")}` : "—"}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] text-gray-550 font-semibold uppercase tracking-wider">Notifs</div>
+                <div className="mt-0.5">
+                  {user.notifications_enabled ? (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400">
+                      <Bell size={9} /> On
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-800 text-gray-500">
+                      <BellOff size={9} /> Off
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between text-[11px] text-gray-500">
+              <div>Joined: {user.created_at}</div>
+              <div>Active: {user.last_active_at || "—"}</div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-2 border-t border-gray-850/20">
+              <Link
+                href={`/users/${user.id}`}
+                className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-gray-800 hover:bg-gray-750 text-sm font-semibold text-white transition-colors cursor-pointer shadow-md">
+                <Eye size={14} />
+                View Profile
+              </Link>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleImpersonate(user.id);
+                }}
+                className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-purple-950/40 hover:bg-purple-900/50 text-sm font-semibold text-purple-300 transition-colors cursor-pointer shadow-md">
+                <LogIn size={14} />
+                Login as User
+              </button>
+            </div>
+          </div>
+        ))}
+        {filteredUsers.length === 0 && (
+          <div className="p-8 text-center text-gray-500 bg-gray-900 rounded-xl shadow-inner">
             No users found matching your search.
           </div>
         )}
