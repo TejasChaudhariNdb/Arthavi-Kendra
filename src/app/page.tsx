@@ -79,6 +79,7 @@ async function StatsSection() {
         icon={Activity}
         trend="Active in last 24h"
         trendUp={true}
+        pulse={true}
       />
       <StatsCard
         label="Total Portfolios"

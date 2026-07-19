@@ -15,6 +15,9 @@ import {
   CalendarDays,
   Users,
   Trash2,
+  Mail,
+  Copy,
+  Check,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -29,6 +32,24 @@ import ChatInbox from "@/components/ChatInbox";
 import StatsCard from "@/components/StatsCard";
 import AllocationChart from "@/components/AllocationChart";
 import { clsx } from "clsx";
+
+function CopyButton({ textValue }: { textValue: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(textValue);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1200);
+      }}
+      className="p-1 text-gray-500 hover:text-gray-300 rounded hover:bg-gray-800/40 transition-colors inline-flex items-center justify-center shrink-0 cursor-pointer"
+      title="Copy to clipboard"
+    >
+      {copied ? <Check size={11} className="text-emerald-400 font-bold" /> : <Copy size={11} />}
+    </button>
+  );
+}
 
 const TIMELINE_DAYS = 30;
 
@@ -222,14 +243,26 @@ export default function UserDetailClient({
             <h1 className="text-3xl font-bold text-white tracking-tight">
               {user.full_name || "User Profile"}
             </h1>
-            <p className="text-gray-400">
-              {user.email} • Joined{" "}
-              {user.created_at
-                ? new Date(user.created_at).toLocaleDateString("en-IN", {
-                    timeZone: "Asia/Kolkata",
-                  })
-                : "N/A"}
-            </p>
+            <div className="flex flex-wrap items-center gap-1.5 text-xs text-gray-400 mt-1">
+              <span className="font-medium text-gray-300">{user.email}</span>
+              <CopyButton textValue={user.email} />
+              <a
+                href={`mailto:${user.email}?subject=Arthavi%20Support%20-%20Portfolio%20Review&body=Hi%20${user.full_name || "User"},`}
+                className="p-1 bg-gray-800 hover:bg-gray-750 text-gray-400 hover:text-white rounded transition-colors inline-flex items-center justify-center shrink-0 cursor-pointer shadow"
+                title="Send Support Email"
+              >
+                <Mail size={11} />
+              </a>
+              <span className="text-gray-600 px-1">•</span>
+              <span>
+                Joined{" "}
+                {user.created_at
+                  ? new Date(user.created_at).toLocaleDateString("en-IN", {
+                      timeZone: "Asia/Kolkata",
+                    })
+                  : "N/A"}
+              </span>
+            </div>
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -16,6 +16,8 @@ import {
   SlidersHorizontal,
   Eye,
   LogIn,
+  Copy,
+  Check,
 } from "lucide-react";
 import { exportUsersCsv, exportSlippingUsersCsv, impersonateUser } from "@/lib/auth-client";
 
@@ -52,6 +54,24 @@ type SortDirection = "asc" | "desc";
 interface SortConfig {
   key: SortKey;
   direction: SortDirection;
+}
+
+function CopyButton({ textValue }: { textValue: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(textValue);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1200);
+      }}
+      className="p-1 text-gray-500 hover:text-gray-300 rounded hover:bg-gray-800/40 transition-colors inline-flex items-center justify-center shrink-0 cursor-pointer"
+      title="Copy to clipboard"
+    >
+      {copied ? <Check size={11} className="text-emerald-400 font-bold" /> : <Copy size={11} />}
+    </button>
+  );
 }
 
 const SortIcon = ({
@@ -96,6 +116,28 @@ export default function UsersTableClient({
   const [exporting, setExporting] = useState(false);
   const [exportingSlipping, setExportingSlipping] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT"
+      ) {
+        return;
+      }
+      if (e.key === "/" || ((e.metaKey || e.ctrlKey) && e.key === "k")) {
+        e.preventDefault();
+        const searchInput = document.getElementById("directory-search-bar");
+        if (searchInput) {
+          searchInput.focus();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -219,6 +261,7 @@ export default function UsersTableClient({
               size={20}
             />
             <input
+              id="directory-search-bar"
               type="text"
               placeholder="Search by name or email..."
               className="w-full bg-gray-900 rounded-xl pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-base md:text-lg transition-all shadow-md"
@@ -471,16 +514,24 @@ export default function UsersTableClient({
                   className="hover:bg-gray-850 transition-colors cursor-pointer">
                   {/* ID */}
                   <td className="px-4 py-4 whitespace-nowrap">
-                    <span className="font-mono text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded">
-                      #{user.id}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded">
+                        #{user.id}
+                      </span>
+                      <CopyButton textValue={String(user.id)} />
+                    </div>
                   </td>
                   {/* Name */}
                   <td className="px-6 py-4 font-medium text-white whitespace-nowrap">
                     {user.full_name || "N/A"}
                   </td>
                   {/* Email */}
-                  <td className="px-6 py-4 whitespace-nowrap">{user.email}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-1.5">
+                      <span>{user.email}</span>
+                      <CopyButton textValue={user.email} />
+                    </div>
+                  </td>
                   {/* Joined */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     {user.created_at}
@@ -564,15 +615,21 @@ export default function UsersTableClient({
             className="bg-gray-900 rounded-xl p-5 space-y-4 hover:bg-gray-850 transition-all cursor-pointer shadow-md shadow-black/15">
             {/* Header */}
             <div className="flex justify-between items-start">
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <h3 className="font-bold text-white text-base truncate">
                   {user.full_name || "N/A"}
                 </h3>
-                <p className="text-xs text-gray-500 mt-0.5 truncate">{user.email}</p>
+                <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+                  <span className="text-xs text-gray-500 truncate">{user.email}</span>
+                  <CopyButton textValue={user.email} />
+                </div>
               </div>
-              <span className="font-mono text-[10px] text-gray-400 bg-gray-955 px-2 py-0.5 rounded shrink-0">
-                #{user.id}
-              </span>
+              <div className="flex items-center gap-1 shrink-0 ml-2">
+                <span className="font-mono text-[10px] text-gray-400 bg-gray-955 px-2 py-0.5 rounded">
+                  #{user.id}
+                </span>
+                <CopyButton textValue={String(user.id)} />
+              </div>
             </div>
 
             {/* Metrics */}

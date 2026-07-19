@@ -66,6 +66,7 @@ export default async function ActivityPage() {
       icon: Users,
       color: "text-emerald-400",
       bg: "bg-emerald-500/10",
+      pulse: true,
     },
     {
       label: "New Today",
@@ -134,7 +135,7 @@ export default async function ActivityPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {kpis.map(({ label, value, suffix, icon: Icon, color, bg }) => (
+            {kpis.map(({ label, value, suffix, icon: Icon, color, bg, pulse }) => (
           <div
             key={label}
             className="bg-gray-900 rounded-xl p-5 flex flex-col gap-3 shadow-lg shadow-black/15"
@@ -147,7 +148,13 @@ export default async function ActivityPage() {
                 <Icon size={16} />
               </span>
             </div>
-            <div>
+            <div className="flex items-baseline">
+              {pulse && (
+                <span className="relative flex h-2 w-2 mr-2 self-center animate-in zoom-in duration-300">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+              )}
               <span className={`text-3xl font-bold ${color}`}>{value}</span>
               <span className="text-gray-500 text-sm ml-1.5">{suffix}</span>
             </div>
