@@ -40,7 +40,7 @@ const TYPE_CONFIG: Record<
     color: "text-pink-400 bg-pink-950/40 border-pink-800",
   },
   criticism: {
-    label: "Criticism",
+    label: "Area for Improvement",
     icon: AlertTriangle,
     color: "text-purple-400 bg-purple-950/40 border-purple-800",
   },
