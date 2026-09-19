@@ -49,7 +49,7 @@ export default function NotificationsPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [listLoading, setListLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "subscribed" | "unsubscribed">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "subscribed" | "unsubscribed" | "bounced" | "complaints">("all");
   const [page, setPage] = useState(1);
   const [copiedTokenUserId, setCopiedTokenUserId] = useState<number | null>(null);
 
@@ -288,7 +288,7 @@ export default function NotificationsPage() {
       {activeTab === "mailing_list" && (
         <div className="space-y-6">
           {/* KPI Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-gray-400">Total Users</span>
@@ -322,6 +322,16 @@ export default function NotificationsPage() {
                   ({stats ? stats.unsubscribe_rate_pct : 0}%)
                 </span>
               </div>
+            </div>
+
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-amber-400">Bounced (SES)</span>
+                <AlertCircle size={16} className="text-amber-500" />
+              </div>
+              <p className="text-2xl font-bold text-amber-400 mt-1">
+                {stats ? (stats.bounced_count || 0).toLocaleString() : "..."}
+              </p>
             </div>
 
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
@@ -361,7 +371,7 @@ export default function NotificationsPage() {
                       : "text-gray-400 hover:text-white"
                   }`}
                 >
-                  All Users
+                  All
                 </button>
                 <button
                   type="button"
@@ -384,6 +394,17 @@ export default function NotificationsPage() {
                   }`}
                 >
                   Unsubscribed
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setStatusFilter("bounced"); setPage(1); }}
+                  className={`px-3 py-1.5 rounded-md transition-colors ${
+                    statusFilter === "bounced"
+                      ? "bg-amber-600 text-white"
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  Bounced
                 </button>
               </div>
 
@@ -452,7 +473,15 @@ export default function NotificationsPage() {
 
                           {/* Status */}
                           <td className="px-5 py-3.5">
-                            {isUnsubscribed ? (
+                            {item.preferences.is_bounced ? (
+                              <span className="inline-flex items-center gap-1 bg-amber-950/60 border border-amber-800/60 text-amber-300 text-xs font-semibold px-2.5 py-1 rounded-full" title={item.preferences.bounce_diagnostic}>
+                                <AlertCircle size={12} /> Bounced (SES)
+                              </span>
+                            ) : item.preferences.is_complained ? (
+                              <span className="inline-flex items-center gap-1 bg-red-950/60 border border-red-800/60 text-red-300 text-xs font-semibold px-2.5 py-1 rounded-full">
+                                <AlertCircle size={12} /> Spam Complaint
+                              </span>
+                            ) : isUnsubscribed ? (
                               <span className="inline-flex items-center gap-1 bg-rose-950/50 border border-rose-800/40 text-rose-300 text-xs font-semibold px-2.5 py-1 rounded-full">
                                 <UserX size={12} /> Unsubscribed
                               </span>

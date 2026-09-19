@@ -753,6 +753,33 @@ export default function UserDetailClient({
                   </div>
                 )}
 
+                {prefs?.is_bounced && (
+                  <div className="mb-4 p-3 rounded-lg bg-amber-950/30 border border-amber-900/40 text-xs text-amber-300 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-amber-400 flex items-center gap-1.5">
+                        ⚠️ Email Delivery Bounced (SES)
+                      </span>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Unblock ${user.email} and clear bounce flag? Only do this if the user confirmed their email is valid.`)) {
+                            handleUpdatePreference({ is_bounced: false });
+                          }
+                        }}
+                        disabled={isUpdatingPrefs}
+                        className="px-2 py-0.5 bg-amber-600 hover:bg-amber-500 text-white rounded text-[10px] font-bold uppercase transition"
+                      >
+                        Reset Bounce
+                      </button>
+                    </div>
+                    <p className="text-amber-300/80 text-[11px]">
+                      Diagnostic: {prefs.bounce_diagnostic || "Mailbox unavailable or invalid address"}
+                    </p>
+                    {prefs.bounced_at && (
+                      <p className="text-amber-400/70 text-[10px]">Bounced on: {prefs.bounced_at}</p>
+                    )}
+                  </div>
+                )}
+
                 {prefs?.unsubscribed_all_marketing && (
                   <div className="mb-4 p-3 rounded-lg bg-rose-950/20 border border-rose-900/30 text-xs text-rose-300 space-y-1">
                     <p className="font-semibold text-rose-400">Marketing & Promotional Emails Blocked</p>

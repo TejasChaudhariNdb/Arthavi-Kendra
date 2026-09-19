@@ -297,3 +297,22 @@ export async function updateUserNotificationPreferencesClient(userId: number, da
   return res.json();
 }
 
+export async function bulkSuppressEmailsClient(emails: string[], reason?: string, diagnostic?: string) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/mailing-list/suppress-bulk`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ emails, reason, diagnostic }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => null);
+    throw new Error(errData?.detail || "Failed to bulk suppress emails");
+  }
+  return res.json();
+}
+
+
+
