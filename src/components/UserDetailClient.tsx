@@ -18,6 +18,10 @@ import {
   Mail,
   Copy,
   Check,
+  UserCheck,
+  UserX,
+  Bell,
+  Sliders,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -92,6 +96,7 @@ export default function UserDetailClient({
     chats = [],
     predictions = [],
     profiles = [],
+    notification_preferences = {},
   } = data;
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"overview" | "holdings" | "chats">(
@@ -101,6 +106,26 @@ export default function UserDetailClient({
     "ALL" | "EQUITY" | "MUTUAL_FUND"
   >("ALL");
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
+
+  const [prefs, setPrefs] = useState<any>(notification_preferences);
+  const [isUpdatingPrefs, setIsUpdatingPrefs] = useState(false);
+  const [prefsSuccess, setPrefsSuccess] = useState<string | null>(null);
+
+  const handleUpdatePreference = async (patch: any) => {
+    setIsUpdatingPrefs(true);
+    setPrefsSuccess(null);
+    try {
+      const { updateUserNotificationPreferencesClient } = await import("@/lib/auth-client");
+      const updated = await updateUserNotificationPreferencesClient(user.id, patch);
+      setPrefs(updated);
+      setPrefsSuccess("Saved successfully!");
+      setTimeout(() => setPrefsSuccess(null), 2500);
+    } catch (err: any) {
+      alert(err.message || "Failed to update notification preferences");
+    } finally {
+      setIsUpdatingPrefs(false);
+    }
+  };
 
   const handleDeletePortfolio = async (portfolioId: number) => {
     setIsDeleting(portfolioId);
@@ -702,6 +727,168 @@ export default function UserDetailClient({
                   ) : (
                     <div className="text-gray-500 text-center py-4 text-xs">No family profiles linked.</div>
                   )}
+                </div>
+              </div>
+
+              {/* Mailing List & Notifications Settings Card */}
+              <div className="bg-gray-900 rounded-xl p-6 shadow-lg shadow-black/20">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide flex items-center gap-2">
+                    <Bell size={16} className="text-emerald-400" /> Notifications & Mailing List
+                  </h3>
+                  {prefs?.unsubscribed_all_marketing ? (
+                    <span className="text-[10px] bg-rose-500/20 text-rose-400 border border-rose-500/30 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1">
+                      <UserX size={10} /> Opted Out
+                    </span>
+                  ) : (
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1">
+                      <UserCheck size={10} /> Active Subscriber
+                    </span>
+                  )}
+                </div>
+
+                {prefsSuccess && (
+                  <div className="mb-3 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center justify-between">
+                    <span>{prefsSuccess}</span>
+                  </div>
+                )}
+
+                {prefs?.unsubscribed_all_marketing && (
+                  <div className="mb-4 p-3 rounded-lg bg-rose-950/20 border border-rose-900/30 text-xs text-rose-300 space-y-1">
+                    <p className="font-semibold text-rose-400">Marketing & Promotional Emails Blocked</p>
+                    {prefs.unsubscribed_at && (
+                      <p className="text-rose-400/80 text-[11px]">Unsubscribed: {prefs.unsubscribed_at}</p>
+                    )}
+                    {prefs.unsubscribe_reason && (
+                      <p className="text-rose-400/80 text-[11px]">Reason: "{prefs.unsubscribe_reason}"</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Direct Action Buttons */}
+                <div className="space-y-3 mb-5">
+                  {prefs?.unsubscribed_all_marketing ? (
+                    <button
+                      onClick={() =>
+                        handleUpdatePreference({
+                          unsubscribed_all_marketing: false,
+                          email_daily_nudge: true,
+                          email_weekly_summary: true,
+                          email_product_updates: true,
+                          email_marketing: true,
+                        })
+                      }
+                      disabled={isUpdatingPrefs}
+                      className="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition shadow disabled:opacity-50"
+                    >
+                      <UserCheck size={14} /> Re-Subscribe to Marketing
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (confirm(`Suppress all marketing emails for ${user.email}? This will record user opt-out immediately.`)) {
+                          handleUpdatePreference({
+                            unsubscribed_all_marketing: true,
+                            unsubscribe_reason: "Admin suppression via dashboard",
+                          });
+                        }
+                      }}
+                      disabled={isUpdatingPrefs}
+                      className="w-full py-2 px-3 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition disabled:opacity-50"
+                    >
+                      <UserX size={14} /> Unsubscribe User (Suppress)
+                    </button>
+                  )}
+
+                  {prefs?.unsubscribe_token && (
+                    <div className="p-2.5 rounded-lg bg-gray-800/60 border border-gray-750 flex items-center justify-between text-xs">
+                      <div className="truncate mr-2">
+                        <span className="text-gray-400 block text-[10px] uppercase font-semibold">Public Unsubscribe Link</span>
+                        <span className="font-mono text-gray-300 text-[11px] truncate">
+                          /unsubscribe?token={prefs.unsubscribe_token.slice(0, 12)}...
+                        </span>
+                      </div>
+                      <CopyButton textValue={`https://arthavi.com/unsubscribe?token=${prefs.unsubscribe_token}`} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Granular Toggles */}
+                <div className="space-y-3 pt-3 border-t border-gray-800">
+                  <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+                    <span>Email Preferences</span>
+                    <Sliders size={12} />
+                  </div>
+
+                  <label className="flex items-center justify-between p-2 rounded-lg bg-gray-850/40 hover:bg-gray-850 transition cursor-pointer text-xs">
+                    <div>
+                      <div className="text-white font-medium">Daily Portfolio Nudge</div>
+                      <div className="text-[10px] text-gray-400">Daily 7:30 PM portfolio digest</div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!!prefs?.email_daily_nudge}
+                      onChange={(e) => handleUpdatePreference({ email_daily_nudge: e.target.checked })}
+                      disabled={isUpdatingPrefs || prefs?.unsubscribed_all_marketing}
+                      className="w-4 h-4 rounded text-emerald-500 bg-gray-800 border-gray-700 focus:ring-emerald-500 focus:ring-offset-gray-900 accent-emerald-500"
+                    />
+                  </label>
+
+                  <label className="flex items-center justify-between p-2 rounded-lg bg-gray-850/40 hover:bg-gray-850 transition cursor-pointer text-xs">
+                    <div>
+                      <div className="text-white font-medium">Weekly Wealth Digest</div>
+                      <div className="text-[10px] text-gray-400">Weekly Sunday morning performance</div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!!prefs?.email_weekly_summary}
+                      onChange={(e) => handleUpdatePreference({ email_weekly_summary: e.target.checked })}
+                      disabled={isUpdatingPrefs || prefs?.unsubscribed_all_marketing}
+                      className="w-4 h-4 rounded text-emerald-500 bg-gray-800 border-gray-700 focus:ring-emerald-500 focus:ring-offset-gray-900 accent-emerald-500"
+                    />
+                  </label>
+
+                  <label className="flex items-center justify-between p-2 rounded-lg bg-gray-850/40 hover:bg-gray-850 transition cursor-pointer text-xs">
+                    <div>
+                      <div className="text-white font-medium">Product Releases & News</div>
+                      <div className="text-[10px] text-gray-400">Feature updates and improvements</div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!!prefs?.email_product_updates}
+                      onChange={(e) => handleUpdatePreference({ email_product_updates: e.target.checked })}
+                      disabled={isUpdatingPrefs || prefs?.unsubscribed_all_marketing}
+                      className="w-4 h-4 rounded text-emerald-500 bg-gray-800 border-gray-700 focus:ring-emerald-500 focus:ring-offset-gray-900 accent-emerald-500"
+                    />
+                  </label>
+
+                  <label className="flex items-center justify-between p-2 rounded-lg bg-gray-850/40 hover:bg-gray-850 transition cursor-pointer text-xs">
+                    <div>
+                      <div className="text-white font-medium">CAS Statement Reports</div>
+                      <div className="text-[10px] text-gray-400">Monthly upload reminders & summaries</div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!!prefs?.email_cas_reports}
+                      onChange={(e) => handleUpdatePreference({ email_cas_reports: e.target.checked })}
+                      disabled={isUpdatingPrefs}
+                      className="w-4 h-4 rounded text-emerald-500 bg-gray-800 border-gray-700 focus:ring-emerald-500 focus:ring-offset-gray-900 accent-emerald-500"
+                    />
+                  </label>
+
+                  <label className="flex items-center justify-between p-2 rounded-lg bg-gray-850/40 hover:bg-gray-850 transition cursor-pointer text-xs">
+                    <div>
+                      <div className="text-white font-medium">Security & Login Alerts</div>
+                      <div className="text-[10px] text-gray-400">New device and security notifications</div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!!prefs?.email_security_alerts}
+                      onChange={(e) => handleUpdatePreference({ email_security_alerts: e.target.checked })}
+                      disabled={isUpdatingPrefs}
+                      className="w-4 h-4 rounded text-emerald-500 bg-gray-800 border-gray-700 focus:ring-emerald-500 focus:ring-offset-gray-900 accent-emerald-500"
+                    />
+                  </label>
                 </div>
               </div>
 

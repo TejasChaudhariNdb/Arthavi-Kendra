@@ -296,3 +296,35 @@ export async function fetchPredictionsUsers() {
   return res.json();
 }
 
+export async function fetchMailingList(params: {
+  skip?: number;
+  limit?: number;
+  search?: string;
+  status_filter?: string;
+} = {}) {
+  const headers = await getHeaders();
+  const query = new URLSearchParams();
+  if (params.skip !== undefined) query.set("skip", String(params.skip));
+  if (params.limit !== undefined) query.set("limit", String(params.limit));
+  if (params.search) query.set("search", params.search);
+  if (params.status_filter) query.set("status_filter", params.status_filter);
+
+  const res = await fetch(`${API_URL}/admin/mailing-list?${query.toString()}`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch mailing list");
+  return res.json();
+}
+
+export async function fetchMailingListStats() {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/mailing-list/stats`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch mailing list stats");
+  return res.json();
+}
+
+

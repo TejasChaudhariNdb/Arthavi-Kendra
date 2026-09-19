@@ -232,3 +232,68 @@ export async function updateAdminUpdateClient(
   }
   return res.json();
 }
+
+export async function fetchMailingListClient(params: {
+  skip?: number;
+  limit?: number;
+  search?: string;
+  status_filter?: string;
+} = {}) {
+  const token = getToken();
+  const query = new URLSearchParams();
+  if (params.skip !== undefined) query.set("skip", String(params.skip));
+  if (params.limit !== undefined) query.set("limit", String(params.limit));
+  if (params.search) query.set("search", params.search);
+  if (params.status_filter) query.set("status_filter", params.status_filter);
+
+  const res = await fetch(`${API_URL}/admin/mailing-list?${query.toString()}`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch mailing list");
+  return res.json();
+}
+
+export async function fetchMailingListStatsClient() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/mailing-list/stats`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch mailing list stats");
+  return res.json();
+}
+
+export async function fetchUserNotificationPreferencesClient(userId: number) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/users/${userId}/notification-preferences`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch user notification preferences");
+  return res.json();
+}
+
+export async function updateUserNotificationPreferencesClient(userId: number, data: any) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/users/${userId}/notification-preferences`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => null);
+    throw new Error(errData?.detail || "Failed to update notification preferences");
+  }
+  return res.json();
+}
+
