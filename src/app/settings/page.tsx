@@ -1,6 +1,8 @@
 import { fetchAdminProfile } from "@/lib/api";
 import CreateAdminForm from "@/components/CreateAdminForm";
-import { User, Shield, Calendar, Mail } from "lucide-react";
+import { User, Shield, Calendar, Mail, Settings, AlertCircle } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
 
 export const dynamic = "force-dynamic";
 
@@ -9,14 +11,14 @@ export default async function SettingsPage() {
   try {
     profile = await fetchAdminProfile();
   } catch (e) {
-    // If fetching profile fails (e.g. token expired), we might want to redirect or show error
-    // Since middleware protects this route, it's likely a backend error or transient issue
     return (
-      <div className="p-8 text-center">
-        <div className="text-red-400 mb-4 bg-red-900/20 p-4 rounded-lg inline-block">
-          Failed to load profile details. Please try refreshing or login again.
+      <Card className="p-8 text-center border-rose-200 dark:border-rose-900/40 bg-rose-50/50 dark:bg-rose-950/20 max-w-2xl mx-auto">
+        <div className="flex flex-col items-center gap-2 text-rose-600 dark:text-rose-400">
+          <AlertCircle className="w-8 h-8" />
+          <p className="text-sm font-semibold">Failed to load admin profile details</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Please try refreshing or login again.</p>
         </div>
-      </div>
+      </Card>
     );
   }
 
@@ -29,56 +31,66 @@ export default async function SettingsPage() {
     : "N/A";
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto pb-10">
-      <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Settings</h1>
-        <p className="text-gray-400">
-          Manage your admin profile and platform access controls
-        </p>
+    <div className="space-y-6 max-w-5xl mx-auto pb-10">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-2.5">
+          <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200/60 dark:border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm">
+            <Settings className="w-5 h-5" />
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+              Settings &amp; Access Controls
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              Manage your administrator credentials and platform access accounts
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Profile Card */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-sm">
-        <div className="bg-gray-950/50 p-6 border-b border-gray-800 flex justify-between items-center">
-          <h2 className="text-xl font-semibold flex items-center gap-2 text-white">
-            <Shield className="text-emerald-500" size={20} /> Current Admin
-            Profile
-          </h2>
-          <div className="text-xs font-mono text-gray-500 bg-gray-900 px-3 py-1 rounded-full border border-gray-800">
-            ID: #{profile.id}
+      <Card>
+        <CardHeader className="border-b border-slate-200/80 dark:border-white/[0.08] px-5 py-4">
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Shield className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> Current Admin Profile
+            </CardTitle>
+            <Badge variant="neutral" size="sm" className="font-mono">
+              ID: #{profile.id}
+            </Badge>
           </div>
-        </div>
+        </CardHeader>
 
-        <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <CardContent className="p-5 sm:p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-1">
-            <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-bold">
               Full Name
             </div>
-            <div className="text-white font-medium flex items-center gap-2 text-lg">
-              <User size={18} className="text-gray-400" /> {profile.full_name}
+            <div className="text-slate-900 dark:text-white font-semibold flex items-center gap-2 text-base sm:text-lg">
+              <User className="w-4 h-4 text-slate-400" /> {profile.full_name}
             </div>
           </div>
 
           <div className="space-y-1">
-            <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold">
-              Email
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-bold">
+              Email Address
             </div>
-            <div className="text-white font-medium flex items-center gap-2 text-lg">
-              <Mail size={18} className="text-gray-400" /> {profile.email}
+            <div className="text-slate-900 dark:text-white font-semibold flex items-center gap-2 text-base sm:text-lg">
+              <Mail className="w-4 h-4 text-slate-400" /> {profile.email}
             </div>
           </div>
 
           <div className="space-y-1">
-            <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold">
-              Joined At
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-bold">
+              Joined Timestamp
             </div>
-            <div className="text-white font-medium flex items-center gap-2 text-lg">
-              <Calendar size={18} className="text-gray-400" />{" "}
-              {joinedAt}
+            <div className="text-slate-900 dark:text-white font-semibold flex items-center gap-2 text-base sm:text-lg font-mono">
+              <Calendar className="w-4 h-4 text-slate-400" /> {joinedAt}
             </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Create Admin Section */}
       <CreateAdminForm />

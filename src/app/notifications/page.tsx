@@ -21,13 +21,12 @@ import {
   Copy,
   Check,
   Sliders,
-  Sparkles,
-  TrendingUp,
-  ShieldCheck,
   Smartphone,
-  ExternalLink,
-  Filter,
 } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function NotificationsPage() {
   const [activeTab, setActiveTab] = useState<"push" | "mailing_list">("mailing_list");
@@ -241,44 +240,44 @@ export default function NotificationsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-500/20 rounded-xl">
-            <Mail className="w-6 h-6 text-indigo-400" />
+        <div className="flex items-center gap-2.5">
+          <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200/60 dark:border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm">
+            <Mail className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
               Mailing List &amp; Notifications
             </h1>
-            <p className="text-xs text-gray-400 mt-0.5">
-              Production email suppression, preference engine &amp; push notification controls
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              Suppression lists, user notification preferences &amp; push broadcast composer
             </p>
           </div>
         </div>
 
         {/* Tab Toggle */}
-        <div className="flex bg-gray-900 border border-gray-800 p-1 rounded-xl">
+        <div className="flex bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] p-1 rounded-2xl self-start sm:self-auto">
           <button
             type="button"
             onClick={() => setActiveTab("mailing_list")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === "mailing_list"
-                ? "bg-indigo-600 text-white shadow-xs"
-                : "text-gray-400 hover:text-white"
+                ? "bg-white dark:bg-indigo-600 text-slate-900 dark:text-white shadow-xs font-bold"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
-            <Mail size={16} />
-            Mailing List &amp; Preferences
+            <Mail className="w-4 h-4" />
+            Mailing List
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("push")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === "push"
-                ? "bg-indigo-600 text-white shadow-xs"
-                : "text-gray-400 hover:text-white"
+                ? "bg-white dark:bg-indigo-600 text-slate-900 dark:text-white shadow-xs font-bold"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
-            <Bell size={16} />
+            <Bell className="w-4 h-4" />
             Push Broadcast
           </button>
         </div>
@@ -288,65 +287,65 @@ export default function NotificationsPage() {
       {activeTab === "mailing_list" && (
         <div className="space-y-6">
           {/* KPI Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
+            <Card className="p-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-gray-400">Total Users</span>
-                <Users size={16} className="text-gray-500" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Users</span>
+                <Users className="w-4 h-4 text-slate-400" />
               </div>
-              <p className="text-2xl font-bold text-white mt-1">
+              <p className="text-xl sm:text-2xl font-bold font-mono text-slate-900 dark:text-white mt-2">
                 {stats ? stats.total_users.toLocaleString() : "..."}
               </p>
-            </div>
+            </Card>
 
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+            <Card className="p-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-emerald-400">Active Subscribers</span>
-                <UserCheck size={16} className="text-emerald-500" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Subscribers</span>
+                <UserCheck className="w-4 h-4 text-emerald-500" />
               </div>
-              <p className="text-2xl font-bold text-emerald-400 mt-1">
+              <p className="text-xl sm:text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-2">
                 {stats ? stats.active_subscribers.toLocaleString() : "..."}
               </p>
-            </div>
+            </Card>
 
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+            <Card className="p-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-rose-400">Unsubscribed</span>
-                <UserX size={16} className="text-rose-500" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">Unsubscribed</span>
+                <UserX className="w-4 h-4 text-rose-500" />
               </div>
-              <div className="flex items-baseline gap-2 mt-1">
-                <p className="text-2xl font-bold text-rose-400">
+              <div className="flex items-baseline gap-2 mt-2">
+                <p className="text-xl sm:text-2xl font-bold font-mono text-rose-600 dark:text-rose-400">
                   {stats ? stats.unsubscribed_count.toLocaleString() : "..."}
                 </p>
-                <span className="text-xs font-medium text-gray-500">
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
                   ({stats ? stats.unsubscribe_rate_pct : 0}%)
                 </span>
               </div>
-            </div>
+            </Card>
 
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+            <Card className="p-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-amber-400">Bounced (SES)</span>
-                <AlertCircle size={16} className="text-amber-500" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Bounced</span>
+                <AlertCircle className="w-4 h-4 text-amber-500" />
               </div>
-              <p className="text-2xl font-bold text-amber-400 mt-1">
+              <p className="text-xl sm:text-2xl font-bold font-mono text-amber-600 dark:text-amber-400 mt-2">
                 {stats ? (stats.bounced_count || 0).toLocaleString() : "..."}
               </p>
-            </div>
+            </Card>
 
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+            <Card className="p-4 col-span-2 md:col-span-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-indigo-400">Push Opt-Ins</span>
-                <Smartphone size={16} className="text-indigo-400" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Push Opt-Ins</span>
+                <Smartphone className="w-4 h-4 text-indigo-500" />
               </div>
-              <p className="text-2xl font-bold text-indigo-300 mt-1">
+              <p className="text-xl sm:text-2xl font-bold font-mono text-indigo-600 dark:text-indigo-400 mt-2">
                 {stats ? stats.push_users_count.toLocaleString() : "..."}
               </p>
-            </div>
+            </Card>
           </div>
 
           {/* Search, Filter & Actions Bar */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+          <Card className="p-4 flex flex-col md:flex-row items-center justify-between gap-3">
             {/* Search Input */}
             <form onSubmit={handleSearchSubmit} className="w-full md:w-96 relative">
               <input
@@ -354,21 +353,21 @@ export default function NotificationsPage() {
                 placeholder="Search user by email or name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-gray-950 border border-gray-800 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-gray-500 outline-hidden focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-[#070a13] border border-slate-200 dark:border-white/[0.08] rounded-xl pl-9 pr-4 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-colors"
               />
-              <Search className="w-4 h-4 text-gray-500 absolute left-3 top-3" />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             </form>
 
             {/* Filter Tabs & Refresh */}
-            <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
-              <div className="flex bg-gray-950 border border-gray-800 p-0.5 rounded-lg text-xs font-medium">
+            <div className="flex items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
+              <div className="flex bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] p-0.5 rounded-xl text-xs font-semibold overflow-x-auto">
                 <button
                   type="button"
                   onClick={() => { setStatusFilter("all"); setPage(1); }}
-                  className={`px-3 py-1.5 rounded-md transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
                     statusFilter === "all"
-                      ? "bg-indigo-600 text-white"
-                      : "text-gray-400 hover:text-white"
+                      ? "bg-white dark:bg-indigo-600 text-slate-900 dark:text-white shadow-xs font-bold"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                   }`}
                 >
                   All
@@ -376,10 +375,10 @@ export default function NotificationsPage() {
                 <button
                   type="button"
                   onClick={() => { setStatusFilter("subscribed"); setPage(1); }}
-                  className={`px-3 py-1.5 rounded-md transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
                     statusFilter === "subscribed"
-                      ? "bg-emerald-600 text-white"
-                      : "text-gray-400 hover:text-white"
+                      ? "bg-white dark:bg-emerald-600 text-emerald-700 dark:text-white shadow-xs font-bold"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                   }`}
                 >
                   Subscribed
@@ -387,10 +386,10 @@ export default function NotificationsPage() {
                 <button
                   type="button"
                   onClick={() => { setStatusFilter("unsubscribed"); setPage(1); }}
-                  className={`px-3 py-1.5 rounded-md transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
                     statusFilter === "unsubscribed"
-                      ? "bg-rose-600 text-white"
-                      : "text-gray-400 hover:text-white"
+                      ? "bg-white dark:bg-rose-600 text-rose-700 dark:text-white shadow-xs font-bold"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                   }`}
                 >
                   Unsubscribed
@@ -398,10 +397,10 @@ export default function NotificationsPage() {
                 <button
                   type="button"
                   onClick={() => { setStatusFilter("bounced"); setPage(1); }}
-                  className={`px-3 py-1.5 rounded-md transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
                     statusFilter === "bounced"
-                      ? "bg-amber-600 text-white"
-                      : "text-gray-400 hover:text-white"
+                      ? "bg-white dark:bg-amber-600 text-amber-700 dark:text-white shadow-xs font-bold"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                   }`}
                 >
                   Bounced
@@ -411,19 +410,19 @@ export default function NotificationsPage() {
               <button
                 type="button"
                 onClick={() => { loadStats(); loadMailingList(); }}
-                className="p-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors cursor-pointer"
+                className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] text-slate-600 dark:text-slate-300 rounded-xl transition-colors cursor-pointer"
                 title="Refresh Table"
               >
-                <RefreshCw size={15} className={listLoading ? "animate-spin" : ""} />
+                <RefreshCw className={`w-4 h-4 ${listLoading ? "animate-spin" : ""}`} />
               </button>
             </div>
-          </div>
+          </Card>
 
-          {/* User Table */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-xs">
+          {/* User Table Card */}
+          <Card>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-gray-300">
-                <thead className="bg-gray-950/70 text-xs font-semibold uppercase text-gray-400 border-b border-gray-800">
+              <table className="w-full text-left text-xs sm:text-sm">
+                <thead className="bg-slate-50/80 dark:bg-white/[0.02] text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 border-b border-slate-200/80 dark:border-white/[0.08]">
                   <tr>
                     <th className="px-5 py-3.5">User</th>
                     <th className="px-5 py-3.5">Mailing Status</th>
@@ -432,17 +431,17 @@ export default function NotificationsPage() {
                     <th className="px-5 py-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800">
+                <tbody className="divide-y divide-slate-200/60 dark:divide-white/[0.04]">
                   {listLoading ? (
                     <tr>
-                      <td colSpan={5} className="px-5 py-12 text-center text-gray-500">
-                        <RefreshCw size={24} className="animate-spin mx-auto text-indigo-400 mb-2" />
+                      <td colSpan={5} className="px-5 py-12 text-center text-slate-400">
+                        <RefreshCw className="w-5 h-5 animate-spin mx-auto text-indigo-500 mb-2" />
                         Loading mailing list...
                       </td>
                     </tr>
                   ) : mailingList.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-5 py-10 text-center text-gray-500">
+                      <td colSpan={5} className="px-5 py-10 text-center text-slate-400">
                         No users found matching current filters.
                       </td>
                     </tr>
@@ -450,22 +449,22 @@ export default function NotificationsPage() {
                     mailingList.map((item) => {
                       const isUnsubscribed = item.preferences.unsubscribed_all_marketing;
                       return (
-                        <tr key={item.user_id} className="hover:bg-gray-850/40 transition-colors">
+                        <tr key={item.user_id} className="hover:bg-slate-50/70 dark:hover:bg-white/[0.02] transition-colors">
                           {/* User info */}
                           <td className="px-5 py-3.5">
                             <div>
-                              <div className="font-semibold text-white flex items-center gap-1.5">
+                              <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
                                 {item.full_name}
                                 {!item.is_active && (
-                                  <span className="text-[10px] bg-red-950/60 border border-red-900/60 text-red-400 px-1.5 py-0.2 rounded font-normal">
+                                  <Badge variant="rose" size="sm">
                                     Deactivated
-                                  </span>
+                                  </Badge>
                                 )}
                               </div>
-                              <div className="text-xs text-gray-400 font-mono mt-0.5">
+                              <div className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">
                                 {item.email}
                               </div>
-                              <div className="text-[11px] text-gray-500 mt-0.5">
+                              <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
                                 ID: {item.user_id} · Joined {item.created_at}
                               </div>
                             </div>
@@ -474,21 +473,21 @@ export default function NotificationsPage() {
                           {/* Status */}
                           <td className="px-5 py-3.5">
                             {item.preferences.is_bounced ? (
-                              <span className="inline-flex items-center gap-1 bg-amber-950/60 border border-amber-800/60 text-amber-300 text-xs font-semibold px-2.5 py-1 rounded-full" title={item.preferences.bounce_diagnostic}>
-                                <AlertCircle size={12} /> Bounced (SES)
-                              </span>
+                              <Badge variant="amber" size="sm">
+                                <AlertCircle className="w-3 h-3" /> Bounced (SES)
+                              </Badge>
                             ) : item.preferences.is_complained ? (
-                              <span className="inline-flex items-center gap-1 bg-red-950/60 border border-red-800/60 text-red-300 text-xs font-semibold px-2.5 py-1 rounded-full">
-                                <AlertCircle size={12} /> Spam Complaint
-                              </span>
+                              <Badge variant="rose" size="sm">
+                                <AlertCircle className="w-3 h-3" /> Spam Complaint
+                              </Badge>
                             ) : isUnsubscribed ? (
-                              <span className="inline-flex items-center gap-1 bg-rose-950/50 border border-rose-800/40 text-rose-300 text-xs font-semibold px-2.5 py-1 rounded-full">
-                                <UserX size={12} /> Unsubscribed
-                              </span>
+                              <Badge variant="rose" size="sm">
+                                <UserX className="w-3 h-3" /> Unsubscribed
+                              </Badge>
                             ) : (
-                              <span className="inline-flex items-center gap-1 bg-emerald-950/50 border border-emerald-800/40 text-emerald-300 text-xs font-semibold px-2.5 py-1 rounded-full">
-                                <UserCheck size={12} /> Active Subscriber
-                              </span>
+                              <Badge variant="emerald" size="sm">
+                                <UserCheck className="w-3 h-3" /> Active Subscriber
+                              </Badge>
                             )}
                           </td>
 
@@ -496,27 +495,27 @@ export default function NotificationsPage() {
                           <td className="px-5 py-3.5">
                             <div className="flex flex-wrap gap-1.5">
                               {item.preferences.email_daily_nudge && !isUnsubscribed && (
-                                <span className="text-[10px] bg-indigo-950/70 border border-indigo-800/40 text-indigo-300 px-2 py-0.5 rounded-md font-medium">
+                                <Badge variant="indigo" size="sm">
                                   🌅 Daily Nudge
-                                </span>
+                                </Badge>
                               )}
                               {item.preferences.email_weekly_summary && !isUnsubscribed && (
-                                <span className="text-[10px] bg-emerald-950/70 border border-emerald-800/40 text-emerald-300 px-2 py-0.5 rounded-md font-medium">
+                                <Badge variant="emerald" size="sm">
                                   📊 Weekly Summary
-                                </span>
+                                </Badge>
                               )}
                               {item.preferences.email_product_updates && !isUnsubscribed && (
-                                <span className="text-[10px] bg-purple-950/70 border border-purple-800/40 text-purple-300 px-2 py-0.5 rounded-md font-medium">
+                                <Badge variant="neutral" size="sm">
                                   🚀 Product Updates
-                                </span>
+                                </Badge>
                               )}
                               {item.has_push_token && (
-                                <span className="text-[10px] bg-sky-950/70 border border-sky-800/40 text-sky-300 px-2 py-0.5 rounded-md font-medium">
+                                <Badge variant="neutral" size="sm">
                                   📱 Push Token
-                                </span>
+                                </Badge>
                               )}
                               {isUnsubscribed && (
-                                <span className="text-[10px] text-gray-500 italic">
+                                <span className="text-[11px] text-slate-400 italic">
                                   All marketing digests paused
                                 </span>
                               )}
@@ -524,18 +523,18 @@ export default function NotificationsPage() {
                           </td>
 
                           {/* Unsubscribed info */}
-                          <td className="px-5 py-3.5 text-xs text-gray-400">
+                          <td className="px-5 py-3.5 text-xs text-slate-500 dark:text-slate-400">
                             {isUnsubscribed ? (
                               <div>
-                                <p className="text-gray-300 font-medium">
+                                <p className="font-semibold text-slate-700 dark:text-slate-300">
                                   {item.preferences.unsubscribed_at || "Recent"}
                                 </p>
-                                <p className="text-gray-500 italic text-[11px] mt-0.5 max-w-xs truncate" title={item.preferences.unsubscribe_reason}>
+                                <p className="text-slate-400 text-[11px] mt-0.5 max-w-xs truncate" title={item.preferences.unsubscribe_reason}>
                                   Reason: {item.preferences.unsubscribe_reason || "Not specified"}
                                 </p>
                               </div>
                             ) : (
-                              <span className="text-gray-600">—</span>
+                              <span className="text-slate-400">—</span>
                             )}
                           </td>
 
@@ -546,13 +545,13 @@ export default function NotificationsPage() {
                               <button
                                 type="button"
                                 onClick={() => copyUnsubscribeLink(item.preferences.unsubscribe_token, item.user_id)}
-                                className="p-1.5 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+                                className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors cursor-pointer"
                                 title="Copy 1-Click Unsubscribe URL"
                               >
                                 {copiedTokenUserId === item.user_id ? (
-                                  <Check size={14} className="text-emerald-400" />
+                                  <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                 ) : (
-                                  <Copy size={14} />
+                                  <Copy className="w-3.5 h-3.5" />
                                 )}
                               </button>
 
@@ -560,9 +559,9 @@ export default function NotificationsPage() {
                               <button
                                 type="button"
                                 onClick={() => openEditModal(item)}
-                                className="px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1"
+                                className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1"
                               >
-                                <Sliders size={12} /> Edit
+                                <Sliders className="w-3 h-3" /> Edit
                               </button>
 
                               {/* Toggle Unsubscribe */}
@@ -570,7 +569,7 @@ export default function NotificationsPage() {
                                 <button
                                   type="button"
                                   onClick={() => handleQuickResubscribe(item.user_id)}
-                                  className="px-2.5 py-1.5 bg-emerald-950/60 border border-emerald-800/50 hover:bg-emerald-900/60 text-emerald-300 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                                  className="px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-semibold rounded-lg transition-colors cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-900/60"
                                 >
                                   Resubscribe
                                 </button>
@@ -578,7 +577,7 @@ export default function NotificationsPage() {
                                 <button
                                   type="button"
                                   onClick={() => openUnsubscribeModal(item)}
-                                  className="px-2.5 py-1.5 bg-rose-950/60 border border-rose-800/50 hover:bg-rose-900/60 text-rose-300 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                                  className="px-2.5 py-1.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold rounded-lg transition-colors cursor-pointer hover:bg-rose-100 dark:hover:bg-rose-900/60"
                                 >
                                   Unsubscribe
                                 </button>
@@ -594,7 +593,7 @@ export default function NotificationsPage() {
             </div>
 
             {/* Pagination footer */}
-            <div className="p-4 border-t border-gray-800 bg-gray-950/40 flex items-center justify-between text-xs text-gray-400">
+            <div className="p-4 border-t border-slate-200/80 dark:border-white/[0.08] bg-slate-50/60 dark:bg-white/[0.01] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
               <div>
                 Showing {Math.min((page - 1) * PAGE_SIZE + 1, totalCount)} to{" "}
                 {Math.min(page * PAGE_SIZE, totalCount)} of {totalCount} users
@@ -604,7 +603,7 @@ export default function NotificationsPage() {
                   type="button"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1}
-                  className="px-3 py-1.5 bg-gray-800 rounded-md disabled:opacity-40 hover:bg-gray-700 text-white cursor-pointer"
+                  className="px-3 py-1.5 bg-white dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] rounded-lg disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-white/[0.1] text-slate-800 dark:text-white cursor-pointer font-semibold"
                 >
                   Previous
                 </button>
@@ -612,31 +611,31 @@ export default function NotificationsPage() {
                   type="button"
                   onClick={() => setPage((p) => p + 1)}
                   disabled={page * PAGE_SIZE >= totalCount}
-                  className="px-3 py-1.5 bg-gray-800 rounded-md disabled:opacity-40 hover:bg-gray-700 text-white cursor-pointer"
+                  className="px-3 py-1.5 bg-white dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] rounded-lg disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-white/[0.1] text-slate-800 dark:text-white cursor-pointer font-semibold"
                 >
                   Next
                 </button>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {/* TAB 2: PUSH BROADCAST COMPOSER */}
       {activeTab === "push" && (
-        <div className="grid md:grid-cols-2 gap-8">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-white mb-6">
+        <div className="grid md:grid-cols-2 gap-6">
+          <Card className="p-6">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-5">
               Compose Push Notification
             </h2>
 
-            <form onSubmit={handleSendPush} className="space-y-5">
+            <form onSubmit={handleSendPush} className="space-y-4">
               {pushStatus.type !== "idle" && (
                 <div
-                  className={`flex gap-3 p-4 rounded-lg text-sm border ${
+                  className={`flex gap-3 p-4 rounded-xl text-xs sm:text-sm border ${
                     pushStatus.type === "success"
-                      ? "bg-emerald-900/20 border-emerald-900/50 text-emerald-400"
-                      : "bg-red-900/20 border-red-900/50 text-red-400"
+                      ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300"
+                      : "bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300"
                   }`}
                 >
                   {pushStatus.type === "success" ? (
@@ -649,17 +648,17 @@ export default function NotificationsPage() {
               )}
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-400">
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                   Target Audience
                 </label>
-                <div className="flex bg-gray-950 border border-gray-800 rounded-lg p-1">
+                <div className="flex bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] rounded-xl p-1">
                   <button
                     type="button"
                     onClick={() => setTargetType("all")}
-                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+                    className={`flex-1 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
                       targetType === "all"
-                        ? "bg-indigo-600 text-white shadow-sm"
-                        : "text-gray-400 hover:text-gray-200"
+                        ? "bg-indigo-600 text-white shadow-sm font-bold"
+                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                     }`}
                   >
                     All Users
@@ -667,10 +666,10 @@ export default function NotificationsPage() {
                   <button
                     type="button"
                     onClick={() => setTargetType("specific")}
-                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
+                    className={`flex-1 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
                       targetType === "specific"
-                        ? "bg-indigo-600 text-white shadow-sm"
-                        : "text-gray-400 hover:text-gray-200"
+                        ? "bg-indigo-600 text-white shadow-sm font-bold"
+                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                     }`}
                   >
                     Specific Users
@@ -680,7 +679,7 @@ export default function NotificationsPage() {
 
               {targetType === "specific" && (
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-400">
+                  <label className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                     User IDs (Comma separated)
                   </label>
                   <input
@@ -688,13 +687,13 @@ export default function NotificationsPage() {
                     placeholder="e.g. 1, 4, 15"
                     value={userIdsStr}
                     onChange={(e) => setUserIdsStr(e.target.value)}
-                    className="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:outline-hidden"
+                    className="w-full bg-slate-50 dark:bg-[#070a13] border border-slate-200 dark:border-white/[0.08] rounded-xl px-4 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
               )}
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-400">
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                   Notification Title
                 </label>
                 <input
@@ -702,12 +701,12 @@ export default function NotificationsPage() {
                   placeholder="e.g. Markets Open Soon! 🌅"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:outline-hidden"
+                  className="w-full bg-slate-50 dark:bg-[#070a13] border border-slate-200 dark:border-white/[0.08] rounded-xl px-4 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-400">
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                   Notification Body
                 </label>
                 <textarea
@@ -715,86 +714,86 @@ export default function NotificationsPage() {
                   placeholder="e.g. SGX Nifty indicates action today. Make your prediction now!"
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
-                  className="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:outline-hidden resize-none"
+                  className="w-full bg-slate-50 dark:bg-[#070a13] border border-slate-200 dark:border-white/[0.08] rounded-xl px-4 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 resize-none"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={pushLoading}
-                className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium py-3 rounded-lg shadow-lg hover:shadow-indigo-500/20 transition-all cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl shadow-sm transition-all cursor-pointer text-xs sm:text-sm"
               >
                 {pushLoading ? (
-                  <RefreshCw className="w-5 h-5 animate-spin" />
+                  <RefreshCw className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    Send Notification
+                    Send Broadcast
                   </>
                 )}
               </button>
             </form>
-          </div>
+          </Card>
 
           {/* Live Mobile Preview */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-white">Live Preview</h2>
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col items-center">
-              <div className="w-full max-w-sm bg-gray-950 border border-gray-800 rounded-2xl p-4 shadow-xl">
-                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-800/60">
+          <div className="space-y-3">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Live Mobile Preview</h2>
+            <Card className="p-6 flex flex-col items-center justify-center">
+              <div className="w-full max-w-sm bg-slate-50 dark:bg-[#070a13] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl p-4 shadow-md">
+                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-200/60 dark:border-white/[0.06]">
                   <div className="p-1 bg-indigo-600 rounded-md">
                     <Bell className="w-3.5 h-3.5 text-white" />
                   </div>
-                  <span className="text-xs font-semibold text-gray-300">
-                    Arthavi App
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    Arthavi
                   </span>
-                  <span className="text-[10px] text-gray-500 ml-auto">now</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-auto">now</span>
                 </div>
 
                 <div className="space-y-1">
-                  <h4 className="text-sm font-bold text-white">
-                    {title || "Notification Title"}
+                  <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                    {title || "Notification Title Preview"}
                   </h4>
-                  <p className="text-xs text-gray-400 line-clamp-3">
-                    {body || "Your notification message will appear here."}
+                  <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed">
+                    {body || "Your broadcast message preview will appear here as users would see on iOS / Android."}
                   </p>
                 </div>
               </div>
-            </div>
+            </Card>
           </div>
         </div>
       )}
 
       {/* MODAL: UNSUBSCRIBE CONFIRMATION */}
       {actionModalType === "unsubscribe" && editingUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <Card className="w-full max-w-md p-6 space-y-4 shadow-2xl">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-rose-950/80 text-rose-400 rounded-xl">
-                <UserX size={20} />
+              <div className="p-2.5 bg-rose-50 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 rounded-xl border border-rose-200 dark:border-rose-800">
+                <UserX className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   Unsubscribe User
                 </h3>
-                <p className="text-xs text-gray-400 font-mono">
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
                   {editingUser.email}
                 </p>
               </div>
             </div>
 
             {modalError && (
-              <div className="text-xs text-red-400 bg-red-950/40 p-3 rounded-lg border border-red-900/50">
+              <div className="text-xs text-rose-600 bg-rose-50 dark:bg-rose-950/40 p-3 rounded-xl border border-rose-200 dark:border-rose-900/50">
                 {modalError}
               </div>
             )}
 
-            <p className="text-xs text-gray-300 leading-relaxed">
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
               This will immediately pause all daily nudges, weekly summaries, and promotional emails for <strong>{editingUser.full_name}</strong>. Account security alerts will remain active.
             </p>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-400">
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">
                 Reason for Suppression / Audit Note
               </label>
               <input
@@ -802,15 +801,15 @@ export default function NotificationsPage() {
                 value={unsubReason}
                 onChange={(e) => setUnsubReason(e.target.value)}
                 placeholder="e.g. User requested removal on WhatsApp"
-                className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2 text-xs text-white outline-hidden focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-[#070a13] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-800">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200/80 dark:border-white/[0.08]">
               <button
                 type="button"
                 onClick={() => setActionModalType(null)}
-                className="px-4 py-2 text-xs font-medium text-gray-400 hover:text-white transition-colors cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -823,24 +822,24 @@ export default function NotificationsPage() {
                 {modalSaving ? "Processing..." : "Confirm Unsubscribe"}
               </button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {/* MODAL: GRANULAR PREFERENCES EDIT */}
       {actionModalType === "edit" && editingUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-5 shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <Card className="w-full max-w-lg p-6 space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200/80 dark:border-white/[0.08]">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl">
-                  <Sliders size={18} />
+                <div className="p-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                  <Sliders className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
                     Edit Notification Preferences
                   </h3>
-                  <p className="text-xs text-gray-400 font-mono">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
                     {editingUser.email}
                   </p>
                 </div>
@@ -848,17 +847,17 @@ export default function NotificationsPage() {
             </div>
 
             {modalError && (
-              <div className="text-xs text-red-400 bg-red-950/40 p-3 rounded-lg border border-red-900/50">
+              <div className="text-xs text-rose-600 bg-rose-50 dark:bg-rose-950/40 p-3 rounded-xl border border-rose-200 dark:border-rose-900/50">
                 {modalError}
               </div>
             )}
 
             <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1 text-xs">
               {/* Master Toggle */}
-              <div className="p-3 bg-gray-950 border border-gray-800 rounded-xl flex items-center justify-between">
+              <div className="p-3 bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06] rounded-xl flex items-center justify-between">
                 <div>
-                  <span className="font-bold text-white">Global Marketing Suppression</span>
-                  <p className="text-gray-500 text-[11px]">Pause all marketing &amp; digests</p>
+                  <span className="font-bold text-slate-900 dark:text-white">Global Marketing Suppression</span>
+                  <p className="text-slate-500 dark:text-slate-400 text-[11px]">Pause all marketing &amp; digests</p>
                 </div>
                 <input
                   type="checkbox"
@@ -875,12 +874,12 @@ export default function NotificationsPage() {
 
               {/* Email Options */}
               <div className="space-y-2 pt-2">
-                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Email Channels
                 </p>
 
-                <div className="p-2.5 bg-gray-950/60 border border-gray-800 rounded-lg flex items-center justify-between">
-                  <span>Daily Portfolio Nudge</span>
+                <div className="p-2.5 bg-slate-50/60 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04] rounded-xl flex items-center justify-between">
+                  <span className="text-slate-800 dark:text-slate-200 font-medium">Daily Portfolio Nudge</span>
                   <input
                     type="checkbox"
                     checked={editForm.email_daily_nudge}
@@ -889,8 +888,8 @@ export default function NotificationsPage() {
                   />
                 </div>
 
-                <div className="p-2.5 bg-gray-950/60 border border-gray-800 rounded-lg flex items-center justify-between">
-                  <span>Weekly Wealth Summary</span>
+                <div className="p-2.5 bg-slate-50/60 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04] rounded-xl flex items-center justify-between">
+                  <span className="text-slate-800 dark:text-slate-200 font-medium">Weekly Wealth Summary</span>
                   <input
                     type="checkbox"
                     checked={editForm.email_weekly_summary}
@@ -899,8 +898,8 @@ export default function NotificationsPage() {
                   />
                 </div>
 
-                <div className="p-2.5 bg-gray-950/60 border border-gray-800 rounded-lg flex items-center justify-between">
-                  <span>Product &amp; Feature Releases</span>
+                <div className="p-2.5 bg-slate-50/60 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04] rounded-xl flex items-center justify-between">
+                  <span className="text-slate-800 dark:text-slate-200 font-medium">Product &amp; Feature Releases</span>
                   <input
                     type="checkbox"
                     checked={editForm.email_product_updates}
@@ -909,8 +908,8 @@ export default function NotificationsPage() {
                   />
                 </div>
 
-                <div className="p-2.5 bg-gray-950/60 border border-gray-800 rounded-lg flex items-center justify-between">
-                  <span>CAS Import &amp; Reports</span>
+                <div className="p-2.5 bg-slate-50/60 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04] rounded-xl flex items-center justify-between">
+                  <span className="text-slate-800 dark:text-slate-200 font-medium">CAS Import &amp; Reports</span>
                   <input
                     type="checkbox"
                     checked={editForm.email_cas_reports}
@@ -919,8 +918,8 @@ export default function NotificationsPage() {
                   />
                 </div>
 
-                <div className="p-2.5 bg-gray-950/60 border border-gray-800 rounded-lg flex items-center justify-between">
-                  <span>Security &amp; Login Alerts</span>
+                <div className="p-2.5 bg-slate-50/60 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04] rounded-xl flex items-center justify-between">
+                  <span className="text-slate-800 dark:text-slate-200 font-medium">Security &amp; Login Alerts</span>
                   <input
                     type="checkbox"
                     checked={editForm.email_security_alerts}
@@ -932,12 +931,12 @@ export default function NotificationsPage() {
 
               {/* Push Options */}
               <div className="space-y-2 pt-2">
-                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Push Channels
                 </p>
 
-                <div className="p-2.5 bg-gray-950/60 border border-gray-800 rounded-lg flex items-center justify-between">
-                  <span>Daily Market Open/Close Push</span>
+                <div className="p-2.5 bg-slate-50/60 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04] rounded-xl flex items-center justify-between">
+                  <span className="text-slate-800 dark:text-slate-200 font-medium">Daily Market Open/Close Push</span>
                   <input
                     type="checkbox"
                     checked={editForm.push_daily_nudge}
@@ -946,8 +945,8 @@ export default function NotificationsPage() {
                   />
                 </div>
 
-                <div className="p-2.5 bg-gray-950/60 border border-gray-800 rounded-lg flex items-center justify-between">
-                  <span>Market Prediction Results</span>
+                <div className="p-2.5 bg-slate-50/60 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04] rounded-xl flex items-center justify-between">
+                  <span className="text-slate-800 dark:text-slate-200 font-medium">Market Prediction Results</span>
                   <input
                     type="checkbox"
                     checked={editForm.push_market_predictions}
@@ -958,11 +957,11 @@ export default function NotificationsPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-800">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200/80 dark:border-white/[0.08]">
               <button
                 type="button"
                 onClick={() => setActionModalType(null)}
-                className="px-4 py-2 text-xs font-medium text-gray-400 hover:text-white transition-colors cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -970,12 +969,12 @@ export default function NotificationsPage() {
                 type="button"
                 onClick={handleConfirmEdit}
                 disabled={modalSaving}
-                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white rounded-xl transition-all cursor-pointer disabled:opacity-50"
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white rounded-xl transition-all cursor-pointer disabled:opacity-50 shadow-sm"
               >
                 {modalSaving ? "Saving..." : "Save Preferences"}
               </button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
     </div>

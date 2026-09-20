@@ -8,7 +8,12 @@ import {
   MessageSquare,
   Activity,
   Calendar,
+  Layers,
+  ArrowRight,
+  AlertCircle,
 } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
 
 export const dynamic = "force-dynamic";
 
@@ -82,9 +87,13 @@ export default async function AnalyticsPage() {
   } catch (error) {
     console.error("Failed to load analytics", error);
     return (
-      <div className="text-white p-4">
-        Error loading analytics. Ensure backend is running.
-      </div>
+      <Card className="p-8 text-center border-rose-200 dark:border-rose-900/40 bg-rose-50/50 dark:bg-rose-950/20">
+        <div className="flex flex-col items-center gap-2 text-rose-600 dark:text-rose-400">
+          <AlertCircle className="w-8 h-8" />
+          <p className="text-sm font-semibold">Error loading platform analytics</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Ensure the backend API service is running.</p>
+        </div>
+      </Card>
     );
   }
 
@@ -110,7 +119,7 @@ export default async function AnalyticsPage() {
   );
 
   const deltaClass = (v: number) =>
-    v > 0 ? "text-emerald-400" : v < 0 ? "text-rose-400" : "text-gray-400";
+    v > 0 ? "text-emerald-600 dark:text-emerald-400" : v < 0 ? "text-rose-600 dark:text-rose-400" : "text-slate-500 dark:text-slate-400";
   const deltaArrow = (v: number) => (v > 0 ? "▲" : v < 0 ? "▼" : "•");
 
   const funnel = [
@@ -125,15 +134,11 @@ export default async function AnalyticsPage() {
 
   const dropoff12 =
     funnel[0].value > 0
-      ? (((funnel[0].value - funnel[1].value) / funnel[0].value) * 100).toFixed(
-          1,
-        )
+      ? (((funnel[0].value - funnel[1].value) / funnel[0].value) * 100).toFixed(1)
       : "0.0";
   const dropoff23 =
     funnel[1].value > 0
-      ? (((funnel[1].value - funnel[2].value) / funnel[1].value) * 100).toFixed(
-          1,
-        )
+      ? (((funnel[1].value - funnel[2].value) / funnel[1].value) * 100).toFixed(1)
       : "0.0";
 
   return (
@@ -142,129 +147,165 @@ export default async function AnalyticsPage() {
 
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">
-            Analytics
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+            Platform Analytics &amp; Funnels
           </h1>
-          <p className="text-gray-400 mt-2">
-            Deep insights into user behavior and platform metrics
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Deep insights into user conversion behavior, peak signup distribution &amp; cohort engagement
           </p>
         </div>
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Link
-          href="/users"
-          className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md block hover:border-gray-700 transition-colors">
-          <div className="flex items-center gap-3 mb-2">
-            <Users className="text-blue-400" size={20} />
-            <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide">
-              Activation Rate
-            </h3>
-          </div>
-          <p className="text-3xl font-bold text-white">
-            {user_stats.activation_rate}%
-          </p>
-          <p className={`text-xs mt-1 ${deltaClass(kpi_deltas.activation_rate_pct)}`}>
-            {deltaArrow(kpi_deltas.activation_rate_pct)}{" "}
-            {Math.abs(kpi_deltas.activation_rate_pct)}% vs prior period
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            {user_stats.users_with_portfolios} / {user_stats.total_users} users
-            have portfolios
-          </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <Link href="/users" className="block group">
+          <Card className="p-5 sm:p-6 hover:border-indigo-500/40 transition-all h-full flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">
+                  Activation Rate
+                </h3>
+                <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                  <Users className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl sm:text-3xl font-bold font-mono text-slate-900 dark:text-white">
+                {user_stats.activation_rate}%
+              </p>
+            </div>
+            <div className="mt-3 pt-3 border-t border-slate-200/60 dark:border-white/[0.04]">
+              <p className={`text-xs font-semibold ${deltaClass(kpi_deltas.activation_rate_pct)}`}>
+                {deltaArrow(kpi_deltas.activation_rate_pct)}{" "}
+                {Math.abs(kpi_deltas.activation_rate_pct)}% vs prior period
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                {user_stats.users_with_portfolios} / {user_stats.total_users} users active
+              </p>
+            </div>
+          </Card>
         </Link>
 
-        <Link
-          href="/users"
-          className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md block hover:border-gray-700 transition-colors">
-          <div className="flex items-center gap-3 mb-2">
-            <TrendingUp className="text-emerald-400" size={20} />
-            <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide">
-              New Users (7d)
-            </h3>
-          </div>
-          <p className="text-3xl font-bold text-white">
-            {recent_activity.new_users_7d}
-          </p>
-          <p className={`text-xs mt-1 ${deltaClass(kpi_deltas.new_users_7d_pct)}`}>
-            {deltaArrow(kpi_deltas.new_users_7d_pct)}{" "}
-            {Math.abs(kpi_deltas.new_users_7d_pct)}% vs previous 7d (
-            {previous_activity.new_users_7d})
-          </p>
+        <Link href="/users" className="block group">
+          <Card className="p-5 sm:p-6 hover:border-indigo-500/40 transition-all h-full flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">
+                  New Users (7d)
+                </h3>
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                  <TrendingUp className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl sm:text-3xl font-bold font-mono text-slate-900 dark:text-white">
+                {recent_activity.new_users_7d}
+              </p>
+            </div>
+            <div className="mt-3 pt-3 border-t border-slate-200/60 dark:border-white/[0.04]">
+              <p className={`text-xs font-semibold ${deltaClass(kpi_deltas.new_users_7d_pct)}`}>
+                {deltaArrow(kpi_deltas.new_users_7d_pct)}{" "}
+                {Math.abs(kpi_deltas.new_users_7d_pct)}% vs previous 7d
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Prior 7d: {previous_activity.new_users_7d} users
+              </p>
+            </div>
+          </Card>
         </Link>
 
-        <Link
-          href="/users?portfolio=yes&page=1"
-          className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md block hover:border-gray-700 transition-colors">
-          <div className="flex items-center gap-3 mb-2">
-            <BarChart3 className="text-purple-400" size={20} />
-            <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide">
-              New Portfolios (7d)
-            </h3>
-          </div>
-          <p className="text-3xl font-bold text-white">{recent_activity.new_portfolios_7d}</p>
-          <p
-            className={`text-xs mt-1 ${deltaClass(kpi_deltas.new_portfolios_7d_pct)}`}>
-            {deltaArrow(kpi_deltas.new_portfolios_7d_pct)}{" "}
-            {Math.abs(kpi_deltas.new_portfolios_7d_pct)}% vs previous 7d (
-            {previous_activity.new_portfolios_7d})
-          </p>
+        <Link href="/users?portfolio=yes&page=1" className="block group">
+          <Card className="p-5 sm:p-6 hover:border-indigo-500/40 transition-all h-full flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">
+                  New Portfolios (7d)
+                </h3>
+                <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                  <BarChart3 className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl sm:text-3xl font-bold font-mono text-slate-900 dark:text-white">
+                {recent_activity.new_portfolios_7d}
+              </p>
+            </div>
+            <div className="mt-3 pt-3 border-t border-slate-200/60 dark:border-white/[0.04]">
+              <p className={`text-xs font-semibold ${deltaClass(kpi_deltas.new_portfolios_7d_pct)}`}>
+                {deltaArrow(kpi_deltas.new_portfolios_7d_pct)}{" "}
+                {Math.abs(kpi_deltas.new_portfolios_7d_pct)}% vs previous 7d
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Prior 7d: {previous_activity.new_portfolios_7d} uploads
+              </p>
+            </div>
+          </Card>
         </Link>
 
-        <Link
-          href="/chats"
-          className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md block hover:border-gray-700 transition-colors">
-          <div className="flex items-center gap-3 mb-2">
-            <MessageSquare className="text-yellow-400" size={20} />
-            <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide">
-              New Chats (7d)
-            </h3>
-          </div>
-          <p className="text-3xl font-bold text-white">{recent_activity.new_chats_7d}</p>
-          <p className={`text-xs mt-1 ${deltaClass(kpi_deltas.new_chats_7d_pct)}`}>
-            {deltaArrow(kpi_deltas.new_chats_7d_pct)}{" "}
-            {Math.abs(kpi_deltas.new_chats_7d_pct)}% vs previous 7d (
-            {previous_activity.new_chats_7d})
-          </p>
+        <Link href="/chats" className="block group">
+          <Card className="p-5 sm:p-6 hover:border-indigo-500/40 transition-all h-full flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">
+                  New Chats (7d)
+                </h3>
+                <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                  <MessageSquare className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl sm:text-3xl font-bold font-mono text-slate-900 dark:text-white">
+                {recent_activity.new_chats_7d}
+              </p>
+            </div>
+            <div className="mt-3 pt-3 border-t border-slate-200/60 dark:border-white/[0.04]">
+              <p className={`text-xs font-semibold ${deltaClass(kpi_deltas.new_chats_7d_pct)}`}>
+                {deltaArrow(kpi_deltas.new_chats_7d_pct)}{" "}
+                {Math.abs(kpi_deltas.new_chats_7d_pct)}% vs previous 7d
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Prior 7d: {previous_activity.new_chats_7d} sessions
+              </p>
+            </div>
+          </Card>
         </Link>
       </div>
 
       {/* Conversion Funnel */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
-        <h3 className="text-xl font-semibold text-white mb-5">
-          Conversion Funnel
+      <Card className="p-6">
+        <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+          <Layers className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          Onboarding &amp; Feature Adoption Funnel
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {funnel.map((step, idx) => (
             <Link
               key={step.label}
               href={step.href}
-              className="p-4 rounded-lg border border-gray-800 bg-gray-800/40 hover:border-gray-700 transition-colors block">
-              <p className="text-xs uppercase tracking-wide text-gray-500">
-                Step {idx + 1}
+              className="p-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/60 dark:bg-white/[0.02] hover:border-indigo-500/40 transition-colors block group"
+            >
+              <p className="text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">
+                Stage {idx + 1}
               </p>
-              <p className="text-sm text-gray-300 mt-1">{step.label}</p>
-              <p className="text-2xl font-bold text-white mt-2">{step.value}</p>
+              <p className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 mt-1">{step.label}</p>
+              <p className="text-2xl font-bold font-mono text-slate-900 dark:text-white mt-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                {step.value}
+              </p>
             </Link>
           ))}
         </div>
-        <div className="mt-4 text-sm text-gray-400 flex flex-wrap gap-6">
-          <span>Drop-off: Users → Portfolio = {dropoff12}%</span>
-          <span>Drop-off: Portfolio → AI = {dropoff23}%</span>
+        <div className="mt-4 pt-3 border-t border-slate-200/60 dark:border-white/[0.04] text-xs text-slate-500 dark:text-slate-400 flex flex-wrap gap-6 font-medium">
+          <span>Drop-off (Users → Portfolios): <strong className="text-slate-700 dark:text-slate-300">{dropoff12}%</strong></span>
+          <span>Drop-off (Portfolios → AI Chat): <strong className="text-slate-700 dark:text-slate-300">{dropoff23}%</strong></span>
         </div>
-      </div>
+      </Card>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Signups by Weekday */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
+        <Card className="p-5 sm:p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-              <Calendar size={20} className="text-emerald-400" />
+            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Calendar size={18} className="text-indigo-600 dark:text-indigo-400" />
               Signups by Weekday
             </h3>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-mono font-medium">
               Peak: {peakDay.day} ({peakDay.count})
             </span>
           </div>
@@ -276,18 +317,18 @@ export default async function AnalyticsPage() {
               const percentage =
                 maxCount > 0 ? (item.count / maxCount) * 100 : 0;
               return (
-                <div key={item.day} className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-300 font-medium">
+                <div key={item.day} className="space-y-1.5">
+                  <div className="flex justify-between text-xs font-semibold">
+                    <span className="text-slate-700 dark:text-slate-300">
                       {item.day}
                     </span>
-                    <span className="text-emerald-400 font-mono">
+                    <span className="text-indigo-600 dark:text-indigo-400 font-mono">
                       {item.count}
                     </span>
                   </div>
-                  <div className="w-full bg-gray-800 rounded-full h-2">
+                  <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
                     <div
-                      className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-2 rounded-full transition-all"
+                      className="bg-indigo-600 h-2 rounded-full transition-all duration-500"
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
@@ -295,20 +336,20 @@ export default async function AnalyticsPage() {
               );
             })}
           </div>
-        </div>
+        </Card>
 
         {/* Signups by Hour */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
+        <Card className="p-5 sm:p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-              <Activity size={20} className="text-blue-400" />
+            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Activity size={18} className="text-emerald-600 dark:text-emerald-400" />
               Signups by Hour
             </h3>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-mono font-medium">
               Peak: {peakHour.hour} ({peakHour.count})
             </span>
           </div>
-          <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
+          <div className="space-y-2.5 max-h-80 overflow-y-auto pr-2">
             {signups_by_hour
               .filter((item: SignupHour) => item.count > 0)
               .map((item: SignupHour) => {
@@ -319,164 +360,103 @@ export default async function AnalyticsPage() {
                   maxCount > 0 ? (item.count / maxCount) * 100 : 0;
                 return (
                   <div key={item.hour} className="flex items-center gap-3">
-                    <span className="text-gray-400 text-xs font-mono w-12">
+                    <span className="text-slate-500 dark:text-slate-400 text-xs font-mono w-14">
                       {item.hour}
                     </span>
-                    <div className="flex-1 bg-gray-800 rounded-full h-1.5">
+                    <div className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
                       <div
-                        className="bg-gradient-to-r from-blue-500 to-blue-600 h-1.5 rounded-full"
+                        className="bg-emerald-500 h-1.5 rounded-full"
                         style={{ width: `${percentage}%` }}
                       />
                     </div>
-                    <span className="text-blue-400 font-mono text-xs w-8 text-right">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-mono text-xs w-8 text-right font-bold">
                       {item.count}
                     </span>
                   </div>
                 );
               })}
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Additional Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Acquisition Source */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
-          <h3 className="text-xl font-semibold text-white mb-4">
-            Signup Source
+        <Card className="p-5 sm:p-6">
+          <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4">
+            Signup Source Distribution
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {signups_by_source.map((item: SignupSource) => (
               <div
                 key={item.source}
-                className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-                <span className="text-sm text-gray-300 capitalize">
+                className="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.04] rounded-xl"
+              >
+                <span className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 capitalize font-medium">
                   {item.source}
                 </span>
-                <span className="text-white font-mono font-bold">
+                <span className="text-slate-900 dark:text-white font-mono font-bold text-xs sm:text-sm">
                   {item.count} ({item.pct}%)
                 </span>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
 
         {/* User Engagement */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
-          <h3 className="text-xl font-semibold text-white mb-4">
+        <Card className="p-5 sm:p-6">
+          <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4">
             User Engagement
           </h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-              <span className="text-sm text-gray-300">Total Users</span>
-              <span className="text-white font-mono font-bold">
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.04] rounded-xl">
+              <span className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium">Total Registered</span>
+              <span className="text-slate-900 dark:text-white font-mono font-bold text-xs sm:text-sm">
                 {user_stats.total_users}
               </span>
             </div>
-            <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-              <span className="text-sm text-gray-300">With Portfolios</span>
-              <span className="text-emerald-400 font-mono font-bold">
+            <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.04] rounded-xl">
+              <span className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium">With Portfolios</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold text-xs sm:text-sm">
                 {user_stats.users_with_portfolios}
               </span>
             </div>
-            <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-              <span className="text-sm text-gray-300">Using AI</span>
-              <span className="text-blue-400 font-mono font-bold">
+            <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.04] rounded-xl">
+              <span className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium">Using AI Chat</span>
+              <span className="text-indigo-600 dark:text-indigo-400 font-mono font-bold text-xs sm:text-sm">
                 {user_stats.users_with_ai_chats}
               </span>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Portfolio Stats */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
-          <h3 className="text-xl font-semibold text-white mb-4">
-            Portfolio Stats
+        <Card className="p-5 sm:p-6">
+          <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4">
+            Portfolio &amp; Asset Stats
           </h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-              <span className="text-sm text-gray-300">Total Portfolios</span>
-              <span className="text-white font-mono font-bold">
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.04] rounded-xl">
+              <span className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium">Total Portfolios</span>
+              <span className="text-slate-900 dark:text-white font-mono font-bold text-xs sm:text-sm">
                 {portfolio_stats.total_portfolios}
               </span>
             </div>
-            <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-              <span className="text-sm text-gray-300">MF Schemes</span>
-              <span className="text-purple-400 font-mono font-bold">
+            <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.04] rounded-xl">
+              <span className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium">MF Schemes</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold text-xs sm:text-sm">
                 {portfolio_stats.total_schemes}
               </span>
             </div>
-            <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-              <span className="text-sm text-gray-300">Stock Holdings</span>
-              <span className="text-orange-400 font-mono font-bold">
+            <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.04] rounded-xl">
+              <span className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium">Stock Holdings</span>
+              <span className="text-indigo-600 dark:text-indigo-400 font-mono font-bold text-xs sm:text-sm">
                 {portfolio_stats.total_equity_holdings}
               </span>
             </div>
           </div>
-        </div>
-
-        {/* AI Activity */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
-          <h3 className="text-xl font-semibold text-white mb-4">AI Activity</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-              <span className="text-sm text-gray-300">Total Sessions</span>
-              <span className="text-white font-mono font-bold">
-                {ai_stats.total_sessions}
-              </span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-              <span className="text-sm text-gray-300">Total Messages</span>
-              <span className="text-yellow-400 font-mono font-bold">
-                {ai_stats.total_messages}
-              </span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-              <span className="text-sm text-gray-300">New Chats (7d)</span>
-              <span className="text-emerald-400 font-mono font-bold">
-                {recent_activity.new_chats_7d}
-              </span>
-            </div>
-          </div>
-        </div>
+        </Card>
       </div>
-
-      {/* Monthly Growth */}
-      {growth_by_month && growth_by_month.length > 0 && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-md">
-          <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-            <TrendingUp size={20} className="text-emerald-400" />
-            Monthly Growth (Last 6 Months)
-          </h3>
-          <div className="space-y-3">
-            {growth_by_month.map((item: GrowthMonth) => {
-              const maxCount = Math.max(
-                ...growth_by_month.map((i: GrowthMonth) => i.count),
-              );
-              const percentage =
-                maxCount > 0 ? (item.count / maxCount) * 100 : 0;
-              return (
-                <div key={item.month} className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-300 font-medium">
-                      {item.month}
-                    </span>
-                    <span className="text-emerald-400 font-mono">
-                      {item.count}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-800 rounded-full h-2">
-                    <div
-                      className="bg-gradient-to-r from-emerald-500 to-green-600 h-2 rounded-full"
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
