@@ -7,15 +7,15 @@ export const metadata = {
 
 export default function MasterDataPage() {
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-10">
+    <div className="space-y-6 max-w-7xl mx-auto pb-10">
       <div className="flex items-center gap-3">
-        <div className="p-3 bg-indigo-900/20 rounded-xl text-indigo-400">
-          <Database size={32} />
+        <div className="p-2.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl">
+          <Database size={24} />
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-white mb-1">Master Data</h1>
-          <p className="text-gray-400 text-sm">
-            Manage market data consistency and monitor update jobs
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Master Data</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-xs md:text-sm mt-0.5">
+            Manage market instruments, price updates, and data health
           </p>
         </div>
       </div>
@@ -24,3 +24,4 @@ export default function MasterDataPage() {
     </div>
   );
 }
+
