@@ -37,15 +37,15 @@ const GrowthChart = ({ data }: { data: ChartData }) => {
   return (
     <div className="flex flex-col gap-6 w-full">
       {/* 15 Day Growth Chart */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 md:p-6 shadow-md h-80 md:h-96 flex flex-col">
+      <div className="bg-white dark:bg-[#0d121f] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-5 shadow-xs h-80 md:h-96 flex flex-col transition-colors">
         <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
-          <h3 className="text-gray-400 font-medium text-xs md:text-sm uppercase tracking-wide">
+          <h3 className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">
             Daily Signups (15 Days)
           </h3>
-          <label className="flex items-center gap-2 text-xs md:text-sm text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">
+          <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors">
             <input
               type="checkbox"
-              className="accent-emerald-500 w-4 h-4 cursor-pointer rounded border-gray-700 bg-gray-800 focus:ring-emerald-500 focus:ring-offset-gray-900"
+              className="accent-indigo-600 w-4 h-4 cursor-pointer rounded border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800"
               checked={showCompare}
               onChange={(e) => setShowCompare(e.target.checked)}
             />
@@ -57,47 +57,47 @@ const GrowthChart = ({ data }: { data: ChartData }) => {
             <AreaChart data={data?.growth15 || []} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorCompare" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#9ca3af" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#9ca3af" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#94a3b8" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#94a3b8" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" vertical={false} />
               <XAxis
                 dataKey="displayDate"
-                stroke="#9ca3af"
-                tick={{ fill: "#9ca3af", fontSize: 10 }}
+                stroke="#94a3b8"
+                tick={{ fill: "#94a3b8", fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
                 minTickGap={10}
               />
               <YAxis
-                stroke="#9ca3af"
-                tick={{ fill: "#9ca3af", fontSize: 10 }}
+                stroke="#94a3b8"
+                tick={{ fill: "#94a3b8", fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
                 allowDecimals={false}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#1f2937",
-                  borderColor: "#374151",
-                  color: "#f3f4f6",
+                  backgroundColor: "#0d121f",
+                  borderColor: "rgba(255,255,255,0.1)",
+                  color: "#f8fafc",
                   fontSize: 12,
-                  borderRadius: "0.5rem",
+                  borderRadius: "0.75rem",
                 }}
-                labelStyle={{ color: "#9ca3af", marginBottom: 4 }}
+                labelStyle={{ color: "#94a3b8", marginBottom: 4 }}
               />
-              <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+              <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
               {showCompare && (
                 <Area
                   name="1 Month Ago"
                   type="monotone"
                   dataKey="compareUsers"
-                  stroke="#9ca3af"
+                  stroke="#94a3b8"
                   strokeWidth={2}
                   strokeDasharray="4 4"
                   fillOpacity={1}
@@ -108,7 +108,7 @@ const GrowthChart = ({ data }: { data: ChartData }) => {
                 name="Current Period"
                 type="monotone"
                 dataKey="users"
-                stroke="#10b981"
+                stroke="#6366f1"
                 strokeWidth={3}
                 fillOpacity={1}
                 fill="url(#colorUsers)"
@@ -119,8 +119,8 @@ const GrowthChart = ({ data }: { data: ChartData }) => {
       </div>
 
       {/* 30 Day Cumulative Growth Chart */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 md:p-6 shadow-md h-80 md:h-96 flex flex-col">
-        <h3 className="text-gray-400 font-medium text-xs md:text-sm uppercase tracking-wide mb-4">
+      <div className="bg-white dark:bg-[#0d121f] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-5 shadow-xs h-80 md:h-96 flex flex-col transition-colors">
+        <h3 className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider mb-4">
           Total Users (30 Days)
         </h3>
         <div className="flex-1 w-full relative min-h-0">
@@ -128,22 +128,22 @@ const GrowthChart = ({ data }: { data: ChartData }) => {
             <AreaChart data={data?.cumulative30 || []} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" vertical={false} />
               <XAxis
                 dataKey="displayDate"
-                stroke="#9ca3af"
-                tick={{ fill: "#9ca3af", fontSize: 10 }}
+                stroke="#94a3b8"
+                tick={{ fill: "#94a3b8", fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
                 minTickGap={20}
               />
               <YAxis
-                stroke="#9ca3af"
-                tick={{ fill: "#9ca3af", fontSize: 10 }}
+                stroke="#94a3b8"
+                tick={{ fill: "#94a3b8", fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
                 domain={['dataMin', 'dataMax']}
@@ -151,19 +151,19 @@ const GrowthChart = ({ data }: { data: ChartData }) => {
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#1f2937",
-                  borderColor: "#374151",
-                  color: "#f3f4f6",
+                  backgroundColor: "#0d121f",
+                  borderColor: "rgba(255,255,255,0.1)",
+                  color: "#f8fafc",
                   fontSize: 12,
-                  borderRadius: "0.5rem",
+                  borderRadius: "0.75rem",
                 }}
-                itemStyle={{ color: "#3b82f6" }}
+                itemStyle={{ color: "#10b981" }}
               />
               <Area
                 name="Total Users"
                 type="monotone"
                 dataKey="total"
-                stroke="#3b82f6"
+                stroke="#10b981"
                 strokeWidth={3}
                 fillOpacity={1}
                 fill="url(#colorTotal)"

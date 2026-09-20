@@ -20,11 +20,11 @@ import Link from "next/link";
 
 function StatsSkeleton() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       {[1, 2, 3, 4, 5].map((i) => (
         <div
           key={i}
-          className="bg-gray-900 rounded-xl p-6 h-[120px] animate-pulse"></div>
+          className="bg-slate-100 dark:bg-[#0d121f] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-5 h-[120px] animate-pulse"></div>
       ))}
     </div>
   );
@@ -32,25 +32,25 @@ function StatsSkeleton() {
 
 function ChartSkeleton() {
   return (
-    <div className="bg-gray-900 rounded-xl w-full h-[400px] animate-pulse"></div>
+    <div className="bg-slate-100 dark:bg-[#0d121f] border border-slate-200 dark:border-white/[0.08] rounded-2xl w-full h-[380px] animate-pulse"></div>
   );
 }
 
 function SnapshotSkeleton() {
   return (
-    <div className="bg-gray-900 rounded-xl p-6 min-h-96 animate-pulse"></div>
+    <div className="bg-slate-100 dark:bg-[#0d121f] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-6 min-h-96 animate-pulse"></div>
   );
 }
 
 function ChatsSkeleton() {
   return (
-    <div className="bg-gray-900 rounded-xl p-6 shadow-lg shadow-black/20 mt-8">
-      <div className="h-6 w-48 bg-gray-800 rounded animate-pulse mb-6"></div>
+    <div className="bg-slate-100 dark:bg-[#0d121f] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-6 shadow-xs mt-8">
+      <div className="h-6 w-48 bg-slate-200 dark:bg-slate-800 rounded animate-pulse mb-6"></div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="h-32 bg-gray-800 rounded-lg animate-pulse"></div>
+            className="h-32 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse"></div>
         ))}
       </div>
     </div>
@@ -62,10 +62,10 @@ async function StatsSection() {
   try {
     stats = await fetchStats();
   } catch {
-    return <div className="text-red-500">Failed to load stats.</div>;
+    return <div className="text-rose-500">Failed to load stats.</div>;
   }
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       <StatsCard
         label="Total Users"
         value={stats.totalUsers}
@@ -96,7 +96,7 @@ async function StatsSection() {
         label="Notifications Enabled"
         value={stats.notificationsEnabled}
         icon={Bell}
-        trend={`${((stats.notificationsEnabled / stats.totalUsers) * 100).toFixed(0)}% of users opted in`}
+        trend={`${((stats.notificationsEnabled / stats.totalUsers) * 100).toFixed(0)}% opted in`}
         trendUp={stats.notificationsEnabled > 0}
       />
     </div>
@@ -108,7 +108,7 @@ async function FamilyDynamicsSummarySection() {
   try {
     stats = await fetchStats();
   } catch {
-    return <div className="text-red-500 mt-8">Failed to load family dynamics.</div>;
+    return <div className="text-rose-500 mt-8">Failed to load family dynamics.</div>;
   }
   return <FamilyDynamicsSection stats={stats} />;
 }
@@ -118,7 +118,7 @@ async function GrowthChartSection() {
   try {
     growthData = await fetchGrowthData();
   } catch {
-    return <div className="text-red-500">Failed to load chart data.</div>;
+    return <div className="text-rose-500">Failed to load chart data.</div>;
   }
   return <GrowthChart data={growthData} />;
 }
@@ -132,7 +132,7 @@ async function OperatorSnapshotSection() {
       fetchChats(0, 6),
     ]);
   } catch {
-    return <div className="text-red-500">Failed to load snapshot.</div>;
+    return <div className="text-rose-500">Failed to load snapshot.</div>;
   }
 
   const totalUsers = Number(stats.totalUsers || 0);
@@ -189,105 +189,110 @@ async function OperatorSnapshotSection() {
   ].slice(0, 3);
 
   return (
-    <div className="bg-gray-900 rounded-xl p-6 shadow-lg shadow-black/25 min-h-96">
-      <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide mb-4">
-        Operator Snapshot
-      </h3>
-      <div className="space-y-3">
-        <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg shadow-sm">
-          <div className="flex items-center gap-3">
-            <TrendingUp className="text-emerald-400" size={18} />
-            <span className="text-sm text-gray-300">Signups (30d)</span>
+    <div className="bg-white dark:bg-[#0d121f] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-5 sm:p-6 shadow-xs min-h-96 flex flex-col justify-between transition-colors">
+      <div>
+        <h3 className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider mb-4">
+          Operator Snapshot
+        </h3>
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-[#070a13] border border-slate-200/60 dark:border-white/[0.06] rounded-xl">
+            <div className="flex items-center gap-2.5">
+              <TrendingUp className="text-indigo-600 dark:text-indigo-400" size={16} />
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Signups (30d)</span>
+            </div>
+            <span className="text-slate-900 dark:text-white font-mono font-bold text-sm">
+              {weeklySignups}
+            </span>
           </div>
-          <span className="text-white font-mono font-bold">
-            {weeklySignups}
-          </span>
-        </div>
-        <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg shadow-sm">
-          <div className="flex items-center gap-3">
-            <Users className="text-blue-400" size={18} />
-            <span className="text-sm text-gray-300">Activation (Proxy)</span>
+          <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-[#070a13] border border-slate-200/60 dark:border-white/[0.06] rounded-xl">
+            <div className="flex items-center gap-2.5">
+              <Users className="text-blue-500" size={16} />
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Activation (Proxy)</span>
+            </div>
+            <span className="text-slate-900 dark:text-white font-mono font-bold text-sm">
+              {activationProxyPct.toFixed(0)}%
+            </span>
           </div>
-          <span className="text-white font-mono font-bold">
-            {activationProxyPct.toFixed(0)}%
-          </span>
-        </div>
-        <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg shadow-sm">
-          <div className="flex items-center gap-3">
-            <Activity className="text-yellow-400" size={18} />
-            <span className="text-sm text-gray-300">DAU / Users</span>
+          <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-[#070a13] border border-slate-200/60 dark:border-white/[0.06] rounded-xl">
+            <div className="flex items-center gap-2.5">
+              <Activity className="text-amber-500" size={16} />
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">DAU / Users</span>
+            </div>
+            <span className="text-slate-900 dark:text-white font-mono font-bold text-sm">
+              {dauPct.toFixed(0)}%
+            </span>
           </div>
-          <span className="text-white font-mono font-bold">
-            {dauPct.toFixed(0)}%
-          </span>
-        </div>
-        <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg shadow-sm">
-          <div className="flex items-center gap-3">
-            <Bell className="text-indigo-400" size={18} />
-            <span className="text-sm text-gray-300">Notif Opt-In</span>
+          <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-[#070a13] border border-slate-200/60 dark:border-white/[0.06] rounded-xl">
+            <div className="flex items-center gap-2.5">
+              <Bell className="text-indigo-500" size={16} />
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Notif Opt-In</span>
+            </div>
+            <span className="text-slate-900 dark:text-white font-mono font-bold text-sm">
+              {notificationOptInPct.toFixed(0)}%
+            </span>
           </div>
-          <span className="text-white font-mono font-bold">
-            {notificationOptInPct.toFixed(0)}%
-          </span>
-        </div>
-        <div className="pt-2 border-t border-gray-800">
-          <p className="text-xs text-gray-500">
-            Peak signup day:{" "}
-            <span className="text-gray-300 font-medium">
-              {peakGrowthDay.displayDate || peakGrowthDay.currentDate}
-            </span>{" "}
-            ({peakGrowthDay.users})
-          </p>
-        </div>
-        {attentionItems.length > 0 && (
-          <div className="pt-2 border-t border-gray-800 space-y-2">
-            <p className="text-xs text-amber-300 flex items-center gap-1">
-              <AlertTriangle size={14} /> Needs Attention
+          <div className="pt-2 border-t border-slate-100 dark:border-white/[0.06]">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Peak signup day:{" "}
+              <span className="text-slate-700 dark:text-slate-200 font-semibold">
+                {peakGrowthDay.displayDate || peakGrowthDay.currentDate}
+              </span>{" "}
+              ({peakGrowthDay.users})
             </p>
-            {attentionItems.slice(0, 2).map((item) => (
-              <p key={item} className="text-xs text-gray-400 leading-relaxed">
-                • {item}
-              </p>
-            ))}
           </div>
-        )}
-        <div className="pt-2 border-t border-gray-850/20 space-y-2">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">
+          {attentionItems.length > 0 && (
+            <div className="pt-2 border-t border-slate-100 dark:border-white/[0.06] space-y-1.5">
+              <p className="text-xs text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
+                <AlertTriangle size={13} /> Needs Attention
+              </p>
+              {attentionItems.slice(0, 2).map((item) => (
+                <p key={item} className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  • {item}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="pt-4 border-t border-slate-100 dark:border-white/[0.06] space-y-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
             Quick Actions
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             <Link
               href="/users"
-              className="text-xs px-2.5 py-1.5 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors inline-flex items-center gap-1 shadow-sm">
-              Users <ExternalLink size={12} />
+              className="text-xs px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-700 dark:hover:text-white transition-colors inline-flex items-center gap-1 font-medium shadow-2xs">
+              Users <ExternalLink size={11} />
             </Link>
             <Link
               href="/chats"
-              className="text-xs px-2.5 py-1.5 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors inline-flex items-center gap-1 shadow-sm">
-              AI Chats <ExternalLink size={12} />
+              className="text-xs px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-700 dark:hover:text-white transition-colors inline-flex items-center gap-1 font-medium shadow-2xs">
+              AI Chats <ExternalLink size={11} />
             </Link>
             <Link
               href="/feedback"
-              className="text-xs px-2.5 py-1.5 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors inline-flex items-center gap-1 shadow-sm">
-              Feedback <ExternalLink size={12} />
+              className="text-xs px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-700 dark:hover:text-white transition-colors inline-flex items-center gap-1 font-medium shadow-2xs">
+              Feedback <ExternalLink size={11} />
             </Link>
             <Link
               href="/notifications"
-              className="text-xs px-2.5 py-1.5 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors inline-flex items-center gap-1 shadow-sm">
-              Notifications <ExternalLink size={12} />
+              className="text-xs px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-700 dark:hover:text-white transition-colors inline-flex items-center gap-1 font-medium shadow-2xs">
+              Notifications <ExternalLink size={11} />
             </Link>
           </div>
         </div>
-        <div className="pt-2 border-t border-gray-850/20 space-y-2">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
             Today Focus
           </p>
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             {todayFocus.map((item) => (
               <Link
                 key={item.label}
                 href={item.href}
-                className="block text-xs text-gray-300 hover:text-emerald-300 transition-colors">
+                className="block text-xs text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                 • {item.label}
               </Link>
             ))}
@@ -304,20 +309,20 @@ async function RecentChatsSection() {
     recentChats = await fetchChats(0, 6);
   } catch {
     return (
-      <div className="text-red-500 mt-8">Failed to load recent chats.</div>
+      <div className="text-rose-500 mt-8">Failed to load recent chats.</div>
     );
   }
 
   return (
-    <div className="bg-gray-900 rounded-xl p-6 shadow-lg shadow-black/25 mt-8">
+    <div className="bg-white dark:bg-[#0d121f] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-6 shadow-xs mt-8 transition-colors">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-gray-400 font-medium text-sm uppercase tracking-wide flex items-center gap-2">
-          <MessageSquare size={16} /> Recent AI Conversations
+        <h3 className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+          <MessageSquare size={16} className="text-indigo-600 dark:text-indigo-400" /> Recent AI Conversations
         </h3>
         <Link
           href="/chats"
-          className="text-emerald-400 hover:text-emerald-300 text-sm font-medium">
-          View All
+          className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-xs font-bold">
+          View All →
         </Link>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -333,19 +338,19 @@ async function RecentChatsSection() {
               key={chat.id}
               href={`/users/${chat.user?.id ?? ""}?tab=chats&chatId=${chat.id}`}
               className="block group">
-              <div className="p-4 bg-gray-800/50 rounded-xl group-hover:bg-gray-800 transition-all h-full flex flex-col shadow-md">
+              <div className="p-4 bg-slate-50 dark:bg-[#070a13] border border-slate-200/80 dark:border-white/[0.06] rounded-xl group-hover:border-indigo-500/40 transition-all h-full flex flex-col shadow-2xs">
                 <div className="flex justify-between items-start mb-2">
-                  <span className="text-xs text-emerald-400 font-bold uppercase tracking-wider bg-emerald-900/20 px-2 py-1 rounded">
+                  <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-800/50 px-2 py-0.5 rounded-md">
                     {chat.user?.name || "Unknown User"}
                   </span>
-                  <span className="text-[10px] text-gray-500">
+                  <span className="text-[10px] text-slate-400 font-mono">
                     {chat.updated_at}
                   </span>
                 </div>
-                <h4 className="text-white font-medium text-sm mb-1 truncate group-hover:text-emerald-300 transition-colors">
+                <h4 className="text-slate-900 dark:text-white font-semibold text-sm mb-1 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                   {chat.title || "Conversation"}
                 </h4>
-                <p className="text-gray-400 text-xs line-clamp-2 mt-auto">
+                <p className="text-slate-500 dark:text-slate-400 text-xs line-clamp-2 mt-auto leading-relaxed">
                   &quot;{chat.preview}&quot;
                 </p>
               </div>
@@ -353,8 +358,8 @@ async function RecentChatsSection() {
           ),
         )}
         {recentChats.length === 0 && (
-          <div className="col-span-full text-center text-gray-500 py-4">
-            No recent chats.
+          <div className="col-span-full text-center text-slate-400 py-6 text-xs">
+            No recent conversations found.
           </div>
         )}
       </div>
@@ -370,38 +375,38 @@ export default function Dashboard() {
   });
 
   return (
-    <div>
-      <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
             Dashboard Overview
           </h1>
-          <p className="text-gray-400 mt-2">
-            Welcome back, Admin. Here&apos;s what&apos;s happening today.
+          <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">
+            Realtime administration &amp; platform performance metrics
           </p>
-          <p className="text-xs text-gray-500 mt-2">
-            Last updated: {refreshedAt}
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 font-mono mt-1">
+            Last refreshed: {refreshedAt} IST
           </p>
         </div>
         <Link
           href="/users"
-          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors self-start sm:self-auto">
-          Manage Users <ArrowRight size={16} />
+          className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-500/20 self-start sm:self-auto cursor-pointer">
+          Manage Users <ArrowRight size={15} />
         </Link>
       </header>
 
-      <div className="space-y-8">
+      <div className="space-y-6">
         <AnalyticsOverview />
 
         <Suspense fallback={<StatsSkeleton />}>
           <StatsSection />
         </Suspense>
 
-        <Suspense fallback={<div className="bg-gray-900 rounded-xl p-6 h-48 animate-pulse mt-8"></div>}>
+        <Suspense fallback={<div className="bg-slate-100 dark:bg-[#0d121f] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-6 h-48 animate-pulse"></div>}>
           <FamilyDynamicsSummarySection />
         </Suspense>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <Suspense fallback={<ChartSkeleton />}>
               <GrowthChartSection />

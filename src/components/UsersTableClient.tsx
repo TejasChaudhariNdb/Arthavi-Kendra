@@ -8,7 +8,6 @@ import {
   ChevronUp,
   ChevronDown,
   ChevronsUpDown,
-  ExternalLink,
   Bell,
   BellOff,
   Download,
@@ -18,8 +17,15 @@ import {
   LogIn,
   Copy,
   Check,
+  RotateCcw,
+  Sparkles,
 } from "lucide-react";
 import { exportUsersCsv, exportSlippingUsersCsv, impersonateUser } from "@/lib/auth-client";
+import { SearchInput } from "./ui/SearchInput";
+import { Button } from "./ui/Button";
+import { Badge } from "./ui/Badge";
+import { Card } from "./ui/Card";
+import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from "./ui/DataTable";
 
 interface User {
   id: number;
@@ -60,16 +66,17 @@ function CopyButton({ textValue }: { textValue: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <button
+      type="button"
       onClick={(e) => {
         e.stopPropagation();
         navigator.clipboard.writeText(textValue);
         setCopied(true);
         setTimeout(() => setCopied(false), 1200);
       }}
-      className="p-1 text-gray-500 hover:text-gray-300 rounded hover:bg-gray-800/40 transition-colors inline-flex items-center justify-center shrink-0 cursor-pointer"
+      className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors inline-flex items-center justify-center shrink-0 cursor-pointer"
       title="Copy to clipboard"
     >
-      {copied ? <Check size={11} className="text-emerald-400 font-bold" /> : <Copy size={11} />}
+      {copied ? <Check size={11} className="text-emerald-500 font-bold" /> : <Copy size={11} />}
     </button>
   );
 }
@@ -82,11 +89,11 @@ const SortIcon = ({
   columnKey: SortKey;
 }) => {
   if (sortConfig?.key !== columnKey)
-    return <ChevronsUpDown size={14} className="text-gray-600" />;
+    return <ChevronsUpDown size={13} className="text-slate-400 dark:text-slate-600 opacity-60" />;
   return sortConfig.direction === "asc" ? (
-    <ChevronUp size={14} className="text-emerald-500" />
+    <ChevronUp size={13} className="text-indigo-600 dark:text-indigo-400 font-bold" />
   ) : (
-    <ChevronDown size={14} className="text-emerald-500" />
+    <ChevronDown size={13} className="text-indigo-600 dark:text-indigo-400 font-bold" />
   );
 };
 
@@ -129,7 +136,7 @@ export default function UsersTableClient({
       }
       if (e.key === "/" || ((e.metaKey || e.ctrlKey) && e.key === "k")) {
         e.preventDefault();
-        const searchInput = document.getElementById("directory-search-bar");
+        const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
         if (searchInput) {
           searchInput.focus();
         }
@@ -202,15 +209,29 @@ export default function UsersTableClient({
     }
   };
 
-  const applyFilters = () => {
+  const applyFilters = (customOverrides?: Partial<{
+    q: string;
+    notifications: string;
+    portfolio: string;
+    minValue: string;
+    atRisk: boolean;
+    active24: boolean;
+  }>) => {
     const params = new URLSearchParams();
     params.set("page", "1");
-    if (search.trim()) params.set("q", search.trim());
-    if (notificationsFilter) params.set("notifications", notificationsFilter);
-    if (portfolioFilter) params.set("portfolio", portfolioFilter);
-    if (minValueFilter.trim()) params.set("min_value", minValueFilter.trim());
-    if (atRiskOnly) params.set("at_risk", "1");
-    if (active24Only) params.set("active_24", "1");
+    const qVal = customOverrides?.q !== undefined ? customOverrides.q : search;
+    const notifVal = customOverrides?.notifications !== undefined ? customOverrides.notifications : notificationsFilter;
+    const portVal = customOverrides?.portfolio !== undefined ? customOverrides.portfolio : portfolioFilter;
+    const minVal = customOverrides?.minValue !== undefined ? customOverrides.minValue : minValueFilter;
+    const riskVal = customOverrides?.atRisk !== undefined ? customOverrides.atRisk : atRiskOnly;
+    const actVal = customOverrides?.active24 !== undefined ? customOverrides.active24 : active24Only;
+
+    if (qVal.trim()) params.set("q", qVal.trim());
+    if (notifVal) params.set("notifications", notifVal);
+    if (portVal) params.set("portfolio", portVal);
+    if (minVal.trim()) params.set("min_value", minVal.trim());
+    if (riskVal) params.set("at_risk", "1");
+    if (actVal) params.set("active_24", "1");
     if (sortBy && sortBy !== "created_at") params.set("sort_by", sortBy);
     if (sortOrder && sortOrder !== "desc") params.set("sort_order", sortOrder);
     router.push(`${pathname}?${params.toString()}`);
@@ -252,21 +273,15 @@ export default function UsersTableClient({
 
   return (
     <div className="space-y-4">
-      {/* Search + Actions */}
-      <div className="flex flex-col gap-3">
+      {/* Search Omnibar & Quick Filters */}
+      <Card className="p-4 sm:p-5 space-y-3.5">
         <div className="flex flex-col sm:flex-row gap-3 items-center">
-          <div className="relative flex-1 w-full">
-            <Search
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
-              size={20}
-            />
-            <input
-              id="directory-search-bar"
-              type="text"
-              placeholder="Search by name or email..."
-              className="w-full bg-gray-900 rounded-xl pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-base md:text-lg transition-all shadow-md"
+          <div className="flex-1 w-full">
+            <SearchInput
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={setSearch}
+              onClear={() => applyFilters({ q: "" })}
+              placeholder="Search by name, email, or user ID... (Press / to focus)"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   applyFilters();
@@ -275,336 +290,336 @@ export default function UsersTableClient({
             />
           </div>
           <div className="flex gap-2 w-full sm:w-auto shrink-0">
-            <button
+            <Button
+              variant={showFilters || activeFiltersCount > 0 ? "secondary" : "outline"}
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
-                showFilters || activeFiltersCount > 0
-                  ? "bg-indigo-950/60 text-indigo-400 shadow-inner"
-                : "bg-gray-900 text-gray-300 hover:text-white hover:bg-gray-800 shadow-sm"
-              }`}>
-              <SlidersHorizontal size={18} />
+              icon={<SlidersHorizontal size={15} />}
+              className="flex-1 sm:flex-none"
+            >
               <span>Filters</span>
               {activeFiltersCount > 0 && (
-                <span className="flex items-center justify-center bg-emerald-500 text-gray-950 font-bold text-xs rounded-full h-5 w-5 animate-in zoom-in-50 duration-200">
+                <span className="flex items-center justify-center bg-indigo-600 text-white font-bold text-[10px] rounded-full h-4.5 w-4.5 ml-1">
                   {activeFiltersCount}
                 </span>
               )}
-            </button>
-            <button
-              onClick={applyFilters}
-              className="flex-1 sm:flex-none px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-all shadow-md shadow-emerald-950/25 cursor-pointer">
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => applyFilters()}
+              className="flex-1 sm:flex-none"
+            >
               Search
-            </button>
+            </Button>
           </div>
         </div>
 
+        {/* 1-Tap Quick Filter Chips */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+          <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 mr-1">
+            Quick Filters:
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              const next = !atRiskOnly;
+              setAtRiskOnly(next);
+              applyFilters({ atRisk: next });
+            }}
+            className={`text-xs px-2.5 py-1 rounded-lg border font-semibold transition-colors cursor-pointer ${
+              atRiskOnly
+                ? "bg-amber-500/15 border-amber-500 text-amber-600 dark:text-amber-400"
+                : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-white/[0.06] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            }`}
+          >
+            ⚠️ At-Risk ({atRiskCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const next = !active24Only;
+              setActive24Only(next);
+              applyFilters({ active24: next });
+            }}
+            className={`text-xs px-2.5 py-1 rounded-lg border font-semibold transition-colors cursor-pointer ${
+              active24Only
+                ? "bg-emerald-500/15 border-emerald-500 text-emerald-600 dark:text-emerald-400"
+                : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-white/[0.06] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            }`}
+          >
+            ⚡ Active (24h)
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const next = portfolioFilter === "yes" ? "" : "yes";
+              setPortfolioFilter(next);
+              applyFilters({ portfolio: next });
+            }}
+            className={`text-xs px-2.5 py-1 rounded-lg border font-semibold transition-colors cursor-pointer ${
+              portfolioFilter === "yes"
+                ? "bg-indigo-500/15 border-indigo-500 text-indigo-600 dark:text-indigo-400"
+                : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-white/[0.06] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            }`}
+          >
+            💼 Has Portfolios
+          </button>
+
+          {activeFiltersCount > 0 && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="text-xs px-2 py-1 text-slate-400 hover:text-rose-500 transition-colors ml-auto inline-flex items-center gap-1 cursor-pointer font-medium"
+            >
+              <RotateCcw size={12} /> Clear all
+            </button>
+          )}
+        </div>
+
+        {/* Detailed Filter Drawer/Tray */}
         {showFilters && (
-          <div className="bg-gray-900/60 rounded-xl p-5 mt-1 animate-in slide-in-from-top-3 duration-200 shadow-lg shadow-black/25">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {/* Notifications */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Notifications</label>
+          <div className="pt-3 border-t border-slate-100 dark:border-white/[0.06] space-y-4 animate-in slide-in-from-top-2 duration-150">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Notification Status
+                </label>
                 <select
                   value={notificationsFilter}
                   onChange={(e) => setNotificationsFilter(e.target.value)}
-                  className="w-full bg-gray-955 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-emerald-500/35 transition-colors">
+                  className="w-full bg-slate-50 dark:bg-[#070a13] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                >
                   <option value="">All Notifications</option>
-                  <option value="on">Notifications On</option>
-                  <option value="off">Notifications Off</option>
+                  <option value="on">Notifications Enabled</option>
+                  <option value="off">Notifications Disabled</option>
                 </select>
               </div>
 
-              {/* Portfolios */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Portfolios</label>
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Portfolio Presence
+                </label>
                 <select
                   value={portfolioFilter}
                   onChange={(e) => setPortfolioFilter(e.target.value)}
-                  className="w-full bg-gray-955 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-emerald-500/35 transition-colors">
+                  className="w-full bg-slate-50 dark:bg-[#070a13] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                >
                   <option value="">All Portfolios</option>
-                  <option value="yes">Has Portfolio</option>
-                  <option value="no">No Portfolio</option>
+                  <option value="yes">Has Active Portfolio</option>
+                  <option value="no">No Portfolios Yet</option>
                 </select>
               </div>
 
-              {/* Min Value */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Min Value (INR)</label>
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Min Total Value (₹)
+                </label>
                 <input
                   type="number"
                   min={0}
                   value={minValueFilter}
                   onChange={(e) => setMinValueFilter(e.target.value)}
-                  placeholder="e.g. 50000"
-                  className="w-full bg-gray-955 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-emerald-500/35 transition-colors"
+                  placeholder="e.g. 100000"
+                  className="w-full bg-slate-50 dark:bg-[#070a13] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
                 />
               </div>
 
-              {/* Sort By */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sort By</label>
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Sort By Column
+                </label>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full bg-gray-955 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-emerald-500/35 transition-colors">
+                  className="w-full bg-slate-50 dark:bg-[#070a13] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                >
                   <option value="created_at">Joined Date</option>
                   <option value="last_active_at">Last Active</option>
                   <option value="portfolio_count">Portfolios Count</option>
-                  <option value="total_value">Total Value</option>
+                  <option value="total_value">Total Value (AUM)</option>
                 </select>
-              </div>
-
-              {/* Sort Order */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sort Order</label>
-                <select
-                  value={sortOrder}
-                  onChange={(e) => setSortOrder(e.target.value)}
-                  className="w-full bg-gray-955 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-emerald-500/35 transition-colors">
-                  <option value="desc">Descending</option>
-                  <option value="asc">Ascending</option>
-                </select>
-              </div>
-
-              {/* Status Flags */}
-              <div className="sm:col-span-2 lg:col-span-3 xl:col-span-1 flex flex-row sm:items-end gap-6 pt-3 sm:pt-0 pb-1">
-                <label className="inline-flex items-center gap-2.5 text-sm text-gray-300 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={atRiskOnly}
-                    onChange={(e) => setAtRiskOnly(e.target.checked)}
-                    className="rounded border-gray-700 bg-gray-950 text-emerald-500 focus:ring-emerald-500 h-4.5 w-4.5 transition-colors"
-                  />
-                  At-Risk Only
-                </label>
-
-                <label className="inline-flex items-center gap-2.5 text-sm text-gray-300 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={active24Only}
-                    onChange={(e) => setActive24Only(e.target.checked)}
-                    className="rounded border-gray-700 bg-gray-950 text-emerald-500 focus:ring-emerald-500 h-4.5 w-4.5 transition-colors"
-                  />
-                  Active (24h)
-                </label>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2.5 mt-5 pt-4 border-t border-gray-850/20">
-              <button
-                onClick={clearFilters}
-                className="px-4 py-2 rounded-lg bg-gray-955 text-gray-400 hover:text-white hover:bg-gray-800 text-xs font-semibold transition-colors cursor-pointer shadow-sm">
-                Reset Filters
-              </button>
-              <button
-                onClick={() => {
-                  applyFilters();
-                  setShowFilters(false);
-                }}
-                className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-colors shadow cursor-pointer">
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                Reset
+              </Button>
+              <Button variant="primary" size="sm" onClick={() => { applyFilters(); setShowFilters(false); }}>
                 Apply Filters
-              </button>
+              </Button>
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-        <div className="text-xs text-gray-400">
-          Filtered users: {totalFiltered}
+      {/* Action Strip: Result counters + CSV Exports */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
+        <div className="flex items-center gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
+          <span>Found {totalFiltered} users</span>
+          {atRiskCount > 0 && (
+            <span className="text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-2 py-0.5 rounded-md">
+              {atRiskCount} at-risk users
+            </span>
+          )}
         </div>
-        <div className="text-xs text-amber-300">
-          At-risk users in result: {atRiskCount}
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="xs"
+            onClick={handleExportSlipping}
+            loading={exportingSlipping}
+            icon={<UserMinus size={13} className="text-rose-500" />}
+          >
+            Export Churn Risk (5d+)
+          </Button>
+          <Button
+            variant="outline"
+            size="xs"
+            onClick={handleExport}
+            loading={exporting}
+            icon={<Download size={13} />}
+          >
+            Export to CSV
+          </Button>
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-3 md:items-center">
-        <div className="flex-1" />
-        <button
-          onClick={handleExportSlipping}
-          disabled={exportingSlipping}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-rose-950/40 text-rose-400 hover:text-rose-300 hover:bg-rose-900/50 transition-colors disabled:opacity-60 text-sm font-semibold shadow">
-          <UserMinus size={16} />
-          {exportingSlipping ? "Exporting..." : "Export Churn Risk (5+ Days)"}
-        </button>
-        <button
-          onClick={handleExport}
-          disabled={exporting}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-gray-300 hover:text-white hover:bg-gray-800 transition-colors disabled:opacity-60 text-sm font-semibold shadow">
-          <Download size={16} />
-          {exporting ? "Exporting..." : "Export All to CSV"}
-        </button>
-      </div>
-
-      {/* Desktop Table View */}
-      <div className="hidden md:block bg-gray-900 rounded-xl overflow-hidden shadow-lg shadow-black/25">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-400">
-            <thead className="bg-gray-950 text-gray-200 uppercase font-medium">
-              <tr>
-                <th className="px-4 py-4 whitespace-nowrap text-gray-500 text-xs">
-                  #ID
-                </th>
-                <th
-                  className="px-6 py-4 whitespace-nowrap cursor-pointer hover:bg-gray-900 transition-colors group"
-                  onClick={() => handleSort("full_name")}>
-                  <div className="flex items-center gap-2">
-                    Name{" "}
-                    <SortIcon sortConfig={sortConfig} columnKey="full_name" />
-                  </div>
-                </th>
-                <th
-                  className="px-6 py-4 whitespace-nowrap cursor-pointer hover:bg-gray-900 transition-colors group"
-                  onClick={() => handleSort("email")}>
-                  <div className="flex items-center gap-2">
-                    Email <SortIcon sortConfig={sortConfig} columnKey="email" />
-                  </div>
-                </th>
-                <th
-                  className="px-6 py-4 whitespace-nowrap cursor-pointer hover:bg-gray-900 transition-colors group"
-                  onClick={() => handleSort("created_at")}>
-                  <div className="flex items-center gap-2">
-                    Joined{" "}
-                    <SortIcon sortConfig={sortConfig} columnKey="created_at" />
-                  </div>
-                </th>
-                <th
-                  className="px-6 py-4 whitespace-nowrap cursor-pointer hover:bg-gray-900 transition-colors group"
-                  onClick={() => handleSort("last_active_at")}>
-                  <div className="flex items-center gap-2">
-                    Last Active{" "}
-                    <SortIcon sortConfig={sortConfig} columnKey="last_active_at" />
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-center whitespace-nowrap">
-                  Notifications
-                </th>
-                <th
-                  className="px-6 py-4 text-center whitespace-nowrap cursor-pointer hover:bg-gray-900 transition-colors group"
-                  onClick={() => handleSort("portfolio_count")}>
-                  <div className="flex items-center justify-center gap-2">
-                    Portfolios{" "}
-                    <SortIcon
-                      sortConfig={sortConfig}
-                      columnKey="portfolio_count"
-                    />
-                  </div>
-                </th>
-                <th
-                  className="px-6 py-4 text-right whitespace-nowrap cursor-pointer hover:bg-gray-900 transition-colors group"
-                  onClick={() => handleSort("total_value")}>
-                  <div className="flex items-center justify-end gap-2">
-                    Total Value{" "}
-                    <SortIcon sortConfig={sortConfig} columnKey="total_value" />
-                  </div>
-                </th>
-                <th className="px-6 py-4 whitespace-nowrap text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-850/20">
-              {filteredUsers.map((user) => (
-                <tr
-                  key={user.id}
-                  onClick={(e) => {
-                    const target = e.target as HTMLElement;
-                    if (!target.closest("button") && !target.closest("a")) {
-                      router.push(`/users/${user.id}`);
-                    }
-                  }}
-                  className="hover:bg-gray-850 transition-colors cursor-pointer">
-                  {/* ID */}
-                  <td className="px-4 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded">
-                        #{user.id}
-                      </span>
-                      <CopyButton textValue={String(user.id)} />
-                    </div>
-                  </td>
-                  {/* Name */}
-                  <td className="px-6 py-4 font-medium text-white whitespace-nowrap">
-                    {user.full_name || "N/A"}
-                  </td>
-                  {/* Email */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-1.5">
-                      <span>{user.email}</span>
-                      <CopyButton textValue={user.email} />
-                    </div>
-                  </td>
-                  {/* Joined */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {user.created_at}
-                  </td>
-                  {/* Last Active */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {user.last_active_at || "-"}
-                  </td>
-                  {/* Notifications */}
-                  <td className="px-6 py-4 text-center whitespace-nowrap">
-                    {user.notifications_enabled ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-950/60 text-emerald-400">
-                        <Bell size={11} /> On
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-800 text-gray-500">
-                        <BellOff size={11} /> Off
-                      </span>
-                    )}
-                  </td>
-                  {/* Portfolios */}
-                  <td className="px-6 py-4 text-center whitespace-nowrap">
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-bold ${
-                        user.portfolio_count > 0
-                          ? "bg-blue-900 text-blue-300"
-                          : "bg-gray-800 text-gray-500"
-                      }`}>
-                      {user.portfolio_count}
+      {/* Desktop Table Grid */}
+      <div className="hidden md:block bg-white dark:bg-[#0d121f] border border-slate-200 dark:border-white/[0.08] rounded-2xl shadow-xs overflow-hidden transition-colors">
+        <Table>
+          <TableHead>
+            <tr>
+              <TableHeaderCell className="w-16">#ID</TableHeaderCell>
+              <TableHeaderCell sortable direction={sortConfig?.key === "full_name" ? sortConfig.direction : null} onSort={() => handleSort("full_name")}>
+                Name
+              </TableHeaderCell>
+              <TableHeaderCell sortable direction={sortConfig?.key === "email" ? sortConfig.direction : null} onSort={() => handleSort("email")}>
+                Email
+              </TableHeaderCell>
+              <TableHeaderCell sortable direction={sortConfig?.key === "created_at" ? sortConfig.direction : null} onSort={() => handleSort("created_at")}>
+                Joined
+              </TableHeaderCell>
+              <TableHeaderCell sortable direction={sortConfig?.key === "last_active_at" ? sortConfig.direction : null} onSort={() => handleSort("last_active_at")}>
+                Last Active
+              </TableHeaderCell>
+              <TableHeaderCell className="text-center">Notifs</TableHeaderCell>
+              <TableHeaderCell sortable direction={sortConfig?.key === "portfolio_count" ? sortConfig.direction : null} onSort={() => handleSort("portfolio_count")} className="text-center">
+                Portfolios
+              </TableHeaderCell>
+              <TableHeaderCell sortable direction={sortConfig?.key === "total_value" ? sortConfig.direction : null} onSort={() => handleSort("total_value")} className="text-right">
+                Total Value
+              </TableHeaderCell>
+              <TableHeaderCell className="text-right pr-5">Actions</TableHeaderCell>
+            </tr>
+          </TableHead>
+          <TableBody>
+            {filteredUsers.map((user) => (
+              <TableRow
+                key={user.id}
+                onClick={(e) => {
+                  const target = e.target as HTMLElement;
+                  if (!target.closest("button") && !target.closest("a")) {
+                    router.push(`/users/${user.id}`);
+                  }
+                }}
+                className="cursor-pointer"
+              >
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <span className="font-mono text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                      #{user.id}
                     </span>
-                  </td>
-                  {/* Total Value */}
-                  <td className="px-6 py-4 text-right font-mono text-emerald-400 whitespace-nowrap">
-                    {user.total_value > 0
-                      ? `₹${user.total_value.toLocaleString()}`
-                      : "-"}
-                  </td>
-                  {/* Actions */}
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="flex items-center gap-2 justify-end">
-                      <Link
-                        href={`/users/${user.id}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-750 text-xs text-gray-200 font-semibold transition-colors cursor-pointer shadow-sm">
-                        <Eye size={12} />
-                        View
-                      </Link>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleImpersonate(user.id);
-                        }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-950/40 hover:bg-purple-900/50 text-xs text-purple-300 font-semibold transition-colors cursor-pointer shadow-sm">
-                        <LogIn size={12} />
-                        Login
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    <CopyButton textValue={String(user.id)} />
+                  </div>
+                </TableCell>
+
+                <TableCell className="font-semibold text-slate-900 dark:text-white whitespace-nowrap">
+                  {user.full_name || "Anonymous"}
+                </TableCell>
+
+                <TableCell className="whitespace-nowrap font-mono text-xs text-slate-600 dark:text-slate-300">
+                  <div className="flex items-center gap-1">
+                    <span>{user.email}</span>
+                    <CopyButton textValue={user.email} />
+                  </div>
+                </TableCell>
+
+                <TableCell className="whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
+                  {user.created_at}
+                </TableCell>
+
+                <TableCell className="whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
+                  {user.last_active_at || "—"}
+                </TableCell>
+
+                <TableCell className="text-center">
+                  {user.notifications_enabled ? (
+                    <Badge variant="success" size="sm" dot>
+                      On
+                    </Badge>
+                  ) : (
+                    <Badge variant="neutral" size="sm">
+                      Off
+                    </Badge>
+                  )}
+                </TableCell>
+
+                <TableCell className="text-center">
+                  <span
+                    className={`inline-block px-2 py-0.5 rounded-lg text-xs font-bold font-mono ${
+                      user.portfolio_count > 0
+                        ? "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/50"
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-400"
+                    }`}
+                  >
+                    {user.portfolio_count}
+                  </span>
+                </TableCell>
+
+                <TableCell className="text-right font-mono font-bold text-slate-900 dark:text-emerald-400 whitespace-nowrap">
+                  {user.total_value > 0
+                    ? `₹${Math.round(user.total_value).toLocaleString("en-IN")}`
+                    : "—"}
+                </TableCell>
+
+                <TableCell className="text-right whitespace-nowrap pr-5">
+                  <div className="flex items-center gap-1.5 justify-end">
+                    <Link
+                      href={`/users/${user.id}`}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-700 dark:hover:text-white text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+                    >
+                      <Eye size={12} /> View
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleImpersonate(user.id);
+                      }}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-xs font-semibold text-indigo-600 dark:text-indigo-300 transition-colors cursor-pointer"
+                      title="Impersonate user session"
+                    >
+                      <LogIn size={12} /> Login
+                    </button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+
         {filteredUsers.length === 0 && (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-xs">
             No users found matching your search.
           </div>
         )}
       </div>
 
       {/* Mobile Card View */}
-      <div className="grid grid-cols-1 gap-4 md:hidden">
+      <div className="grid grid-cols-1 gap-3.5 md:hidden">
         {filteredUsers.map((user) => (
-          <div
+          <Card
             key={user.id}
             onClick={(e) => {
               const target = e.target as HTMLElement;
@@ -612,87 +627,81 @@ export default function UsersTableClient({
                 router.push(`/users/${user.id}`);
               }
             }}
-            className="bg-gray-900 rounded-xl p-5 space-y-4 hover:bg-gray-850 transition-all cursor-pointer shadow-md shadow-black/15">
-            {/* Header */}
-            <div className="flex justify-between items-start">
+            className="p-4 space-y-3 cursor-pointer hover:border-indigo-500/30"
+          >
+            <div className="flex justify-between items-start gap-2">
               <div className="min-w-0 flex-1">
-                <h3 className="font-bold text-white text-base truncate">
-                  {user.full_name || "N/A"}
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm truncate">
+                  {user.full_name || "Anonymous User"}
                 </h3>
-                <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-                  <span className="text-xs text-gray-500 truncate">{user.email}</span>
+                <div className="flex items-center gap-1 mt-0.5 min-w-0">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-mono truncate">{user.email}</span>
                   <CopyButton textValue={user.email} />
                 </div>
               </div>
-              <div className="flex items-center gap-1 shrink-0 ml-2">
-                <span className="font-mono text-[10px] text-gray-400 bg-gray-955 px-2 py-0.5 rounded">
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded font-semibold">
                   #{user.id}
                 </span>
                 <CopyButton textValue={String(user.id)} />
               </div>
             </div>
 
-            {/* Metrics */}
-            <div className="grid grid-cols-3 gap-2 bg-gray-955/60 p-3 rounded-lg text-center shadow-inner">
+            {/* Metrics Row */}
+            <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-[#070a13] border border-slate-100 dark:border-white/[0.04] p-2.5 rounded-xl text-center">
               <div>
-                <div className="text-[10px] text-gray-550 font-semibold uppercase tracking-wider">Portfolios</div>
-                <div className="text-sm font-bold text-white font-mono mt-0.5">{user.portfolio_count}</div>
+                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Portfolios</div>
+                <div className="text-xs font-bold font-mono text-slate-900 dark:text-white mt-0.5">{user.portfolio_count}</div>
               </div>
               <div>
-                <div className="text-[10px] text-gray-550 font-semibold uppercase tracking-wider">Value</div>
-                <div className="text-sm font-bold text-emerald-400 font-mono mt-0.5">
+                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">AUM Value</div>
+                <div className="text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
                   {user.total_value > 0 ? `₹${Math.round(user.total_value).toLocaleString("en-IN")}` : "—"}
                 </div>
               </div>
               <div>
-                <div className="text-[10px] text-gray-550 font-semibold uppercase tracking-wider">Notifs</div>
+                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Notifs</div>
                 <div className="mt-0.5">
                   {user.notifications_enabled ? (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400">
-                      <Bell size={9} /> On
-                    </span>
+                    <Badge variant="success" size="sm">On</Badge>
                   ) : (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-800 text-gray-500">
-                      <BellOff size={9} /> Off
-                    </span>
+                    <Badge variant="neutral" size="sm">Off</Badge>
                   )}
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-between text-[11px] text-gray-500">
-              <div>Joined: {user.created_at}</div>
-              <div>Active: {user.last_active_at || "—"}</div>
+            <div className="flex justify-between text-[11px] text-slate-400">
+              <span>Joined: {user.created_at}</span>
+              <span>Active: {user.last_active_at || "—"}</span>
             </div>
 
-            {/* Actions */}
-            <div className="flex gap-2 pt-2 border-t border-gray-850/20">
+            <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-white/[0.04]">
               <Link
                 href={`/users/${user.id}`}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-gray-800 hover:bg-gray-750 text-sm font-semibold text-white transition-colors cursor-pointer shadow-md">
-                <Eye size={14} />
-                View Profile
+                className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-700 text-xs font-bold text-slate-800 dark:text-white transition-colors cursor-pointer"
+              >
+                <Eye size={13} /> View Profile
               </Link>
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleImpersonate(user.id);
                 }}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-purple-950/40 hover:bg-purple-900/50 text-sm font-semibold text-purple-300 transition-colors cursor-pointer shadow-md">
-                <LogIn size={14} />
-                Login as User
+                className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-xs font-bold text-indigo-600 dark:text-indigo-300 transition-colors cursor-pointer"
+              >
+                <LogIn size={13} /> Impersonate
               </button>
             </div>
-          </div>
+          </Card>
         ))}
+
         {filteredUsers.length === 0 && (
-          <div className="p-8 text-center text-gray-500 bg-gray-900 rounded-xl shadow-inner">
+          <div className="p-8 text-center text-slate-500 bg-white dark:bg-[#0d121f] rounded-2xl border border-slate-200 dark:border-white/[0.08] text-xs">
             No users found matching your search.
           </div>
         )}
-      </div>
-      <div className="text-gray-500 text-xs text-right mt-2">
-        Showing {filteredUsers.length} users on this page
       </div>
     </div>
   );

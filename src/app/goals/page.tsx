@@ -155,9 +155,9 @@ export default async function GoalsAdminPage() {
                       <div className="mt-1 text-xs text-gray-500">{goal.user.email}</div>
                     </td>
                     <td className="px-4 py-4 text-white">
-                      ₹{Math.round(goal.target_amount).toLocaleString("en-IN")}
+                      {goal.target_amount ? `₹${Math.round(goal.target_amount).toLocaleString("en-IN")}` : "Flexible"}
                     </td>
-                    <td className="px-4 py-4">{goal.target_year || "N/A"}</td>
+                    <td className="px-4 py-4">{goal.target_year || "Flexible"}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-xs">
                       {goal.created_at || "N/A"}
                     </td>

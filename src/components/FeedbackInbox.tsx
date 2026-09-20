@@ -19,6 +19,12 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
+import {
+  FEEDBACK_STATUSES,
+  getFeedbackStatusMeta,
+  normalizeFeedbackStatus,
+  FeedbackStatus,
+} from "@/lib/feedbackStatus";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -81,42 +87,6 @@ const TYPE_CONFIG: Record<
   },
 };
 
-const STATUS_CONFIG: Record<
-  string,
-  { label: string; color: string; icon: React.ElementType }
-> = {
-  new: {
-    label: "New",
-    color: "text-red-400 bg-red-900/30 border-red-800",
-    icon: Clock,
-  },
-  seen: {
-    label: "Seen",
-    color: "text-yellow-400 bg-yellow-900/30 border-yellow-800",
-    icon: Eye,
-  },
-  accepted: {
-    label: "Accepted",
-    color: "text-blue-400 bg-blue-900/30 border-blue-800",
-    icon: CheckCircle,
-  },
-  in_progress: {
-    label: "In Progress",
-    color: "text-amber-400 bg-amber-900/30 border-amber-800",
-    icon: Clock,
-  },
-  resolved: {
-    label: "Action Taken",
-    color: "text-emerald-400 bg-emerald-900/30 border-emerald-800",
-    icon: CheckCircle,
-  },
-  not_feasible: {
-    label: "Shelved",
-    color: "text-rose-400 bg-rose-900/30 border-rose-800",
-    icon: CheckCircle,
-  },
-};
-
 interface CommentItem {
   id: number;
   comment: string;
@@ -149,7 +119,7 @@ interface FeedbackCardProps {
 }
 
 function FeedbackCard({ item, updating, onUpdate, onAddComment }: FeedbackCardProps) {
-  const [status, setStatus] = useState(item.status);
+  const [status, setStatus] = useState(normalizeFeedbackStatus(item.status));
   const [actionTaken, setActionTaken] = useState(item.action_taken || "");
   const [isSaved, setIsSaved] = useState(true);
   const [adminCommentText, setAdminCommentText] = useState("");
@@ -157,13 +127,13 @@ function FeedbackCard({ item, updating, onUpdate, onAddComment }: FeedbackCardPr
   const [showComments, setShowComments] = useState(false);
 
   useEffect(() => {
-    setStatus(item.status);
+    setStatus(normalizeFeedbackStatus(item.status));
     setActionTaken(item.action_taken || "");
     setIsSaved(true);
   }, [item]);
 
   const typeCfg = TYPE_CONFIG[item.type] || TYPE_CONFIG.feedback;
-  const statusCfg = STATUS_CONFIG[item.status] || STATUS_CONFIG.new;
+  const statusCfg = getFeedbackStatusMeta(item.status);
   const TypeIcon = typeCfg.icon;
   const StatusIcon = statusCfg.icon;
 
@@ -262,7 +232,7 @@ function FeedbackCard({ item, updating, onUpdate, onAddComment }: FeedbackCardPr
           </div>
 
           <div className="flex flex-col items-end gap-2 shrink-0">
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold ${statusCfg.color}`}>
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold ${statusCfg.badgeColor}`}>
               <StatusIcon className="w-3 h-3" />
               {statusCfg.label}
             </span>
@@ -283,7 +253,7 @@ function FeedbackCard({ item, updating, onUpdate, onAddComment }: FeedbackCardPr
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Official Response / Action Taken Note..."
+              placeholder="Official Response / Release Note (Optional)..."
               value={actionTaken}
               onChange={(e) => {
                 setActionTaken(e.target.value);
@@ -296,17 +266,16 @@ function FeedbackCard({ item, updating, onUpdate, onAddComment }: FeedbackCardPr
             <select
               value={status}
               onChange={(e) => {
-                setStatus(e.target.value);
+                setStatus(e.target.value as FeedbackStatus);
                 setIsSaved(false);
               }}
-              className="bg-gray-900 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-300 focus:outline-none focus:border-emerald-600"
+              className="bg-gray-900 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-200 focus:outline-none focus:border-emerald-600"
             >
-              <option value="new">New</option>
-              <option value="seen">Seen</option>
-              <option value="accepted">Accepted</option>
-              <option value="in_progress">In Progress</option>
-              <option value="resolved">Action Taken</option>
-              <option value="not_feasible">Shelved</option>
+              {FEEDBACK_STATUSES.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.emoji} {s.label}
+                </option>
+              ))}
             </select>
             <button
               onClick={handleSave}
@@ -474,22 +443,31 @@ export default function FeedbackInbox() {
     }
   };
 
-  const counts = {
+  const counts: Record<string, number> = {
     all: items.length,
-    new: items.filter((f) => f.status === "new").length,
-    seen: items.filter((f) => f.status === "seen").length,
-    accepted: items.filter((f) => f.status === "accepted").length,
-    in_progress: items.filter((f) => f.status === "in_progress").length,
-    resolved: items.filter((f) => f.status === "resolved").length,
-    not_feasible: items.filter((f) => f.status === "not_feasible").length,
+    under_review: items.filter((f) => normalizeFeedbackStatus(f.status) === "under_review").length,
+    in_progress: items.filter((f) => normalizeFeedbackStatus(f.status) === "in_progress").length,
+    live: items.filter((f) => normalizeFeedbackStatus(f.status) === "live").length,
+    on_hold: items.filter((f) => normalizeFeedbackStatus(f.status) === "on_hold").length,
+  };
+
+  const statusTabLabels: Record<string, string> = {
+    all: "All",
+    under_review: "🟡 Under Review",
+    in_progress: "🔵 In Progress",
+    live: "🟢 Live / Done",
+    on_hold: "⏸️ On Hold",
   };
 
   const visibleItems = items
-    .filter((f) => filter === "all" || f.status === filter)
+    .filter((f) => {
+      if (filter === "all") return true;
+      return normalizeFeedbackStatus(f.status) === filter;
+    })
     .sort((a, b) => {
-      const unresolvedA = a.status === "resolved" ? 1 : 0;
-      const unresolvedB = b.status === "resolved" ? 1 : 0;
-      if (unresolvedA !== unresolvedB) return unresolvedA - unresolvedB;
+      const isLiveA = normalizeFeedbackStatus(a.status) === "live" ? 1 : 0;
+      const isLiveB = normalizeFeedbackStatus(b.status) === "live" ? 1 : 0;
+      if (isLiveA !== isLiveB) return isLiveA - isLiveB;
 
       const aTs = a.created_at_iso ? new Date(a.created_at_iso).getTime() : 0;
       const bTs = b.created_at_iso ? new Date(b.created_at_iso).getTime() : 0;
@@ -542,12 +520,12 @@ export default function FeedbackInbox() {
           <button
             key={key}
             onClick={() => setFilter(key)}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
               filter === key
                 ? "bg-gray-800 text-white border border-gray-600 font-bold"
                 : "bg-gray-950 border border-gray-800 text-gray-400 hover:text-white"
             }`}>
-            {key.replace("_", " ")}{" "}
+            {statusTabLabels[key] || key}{" "}
             {count > 0 && (
               <span
                 className={`text-[10px] px-1.5 py-0.2 rounded-full ${filter === key ? "bg-emerald-500 text-white font-bold" : "bg-gray-800"}`}>
