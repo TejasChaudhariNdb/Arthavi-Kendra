@@ -1,13 +1,26 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import {
-  fetchMetricsDau,
-  fetchMetricsWau,
-  fetchMetricsMau,
+  fetchActivityOverview,
+  fetchActivityBreakdown,
+  fetchWeeklyDecomposition,
+  fetchCohortMatrix,
+  fetchDayNRetention,
+  fetchSourceRetention,
+  fetchEngagementFrequency,
+  fetchEngagementScatter,
+  fetchWinBackUsers,
+  fetchSanityCheck,
   fetchUsersWithFilters,
   fetchUsersMeta,
 } from "@/lib/api";
-import ActivityCharts from "@/components/ActivityCharts";
+import ActivitySanityBanner from "@/components/ActivitySanityBanner";
+import ActivityDecompositionChart from "@/components/ActivityDecompositionChart";
+import WeeklyDecompositionChart from "@/components/WeeklyDecompositionChart";
+import CohortRetentionMatrix from "@/components/CohortRetentionMatrix";
+import EngagementScatterChart from "@/components/EngagementScatterChart";
+import EngagementDepthAndSource from "@/components/EngagementDepthAndSource";
+import WinBackUsersTable from "@/components/WinBackUsersTable";
 import RecentActiveUsersTable from "@/components/RecentActiveUsersTable";
 import {
   Activity,
@@ -16,6 +29,8 @@ import {
   RefreshCw,
   TrendingUp,
   AlertTriangle,
+  Zap,
+  Target,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -36,91 +51,132 @@ function todayISTString(): string {
 }
 
 export default async function ActivityPage() {
-  const [dau, wau, mau, recentUsers, meta] = await Promise.all([
-    fetchMetricsDau(30),
-    fetchMetricsWau(12),
-    fetchMetricsMau(6),
+  const [
+    overview,
+    breakdown,
+    weeklyDecomp,
+    cohortMatrix,
+    dayN,
+    sourceRetention,
+    freqBuckets,
+    scatterUsers,
+    winBackUsers,
+    sanity,
+    recentUsers,
+    meta,
+  ] = await Promise.all([
+    fetchActivityOverview().catch(() => null),
+    fetchActivityBreakdown(90).catch(() => []),
+    fetchWeeklyDecomposition(12).catch(() => []),
+    fetchCohortMatrix(8).catch(() => []),
+    fetchDayNRetention(8).catch(() => []),
+    fetchSourceRetention().catch(() => []),
+    fetchEngagementFrequency().catch(() => []),
+    fetchEngagementScatter().catch(() => []),
+    fetchWinBackUsers(50).catch(() => []),
+    fetchSanityCheck().catch(() => null),
     fetchUsersWithFilters({
       active_within_hours: hoursSinceMidnightIST(),
       limit: 100,
       sort_by: "last_active_at",
       sort_order: "desc",
-    }),
-    fetchUsersMeta({ at_risk: true }),
+    }).catch(() => []),
+    fetchUsersMeta({ at_risk: true }).catch(() => null),
   ]);
 
   const todayIST = todayISTString();
-  const activeToday = recentUsers.length;
-  const newToday = recentUsers.filter(
-    (u: { created_at?: string }) => u.created_at?.startsWith(todayIST),
-  ).length;
-  const returning = activeToday - newToday;
-  const retentionPct =
-    activeToday > 0 ? Math.round((returning / activeToday) * 100) : 0;
+  const dauVal = overview?.dau ?? recentUsers.length;
+  const wauVal = overview?.wau ?? 0;
+  const mauVal = overview?.mau ?? 0;
+  const stickinessVal = overview?.dau_mau_stickiness_pct ?? 0;
+  const returningShare = overview?.returning_share_pct ?? 0;
 
   const kpis = [
     {
-      label: "Active Today",
-      value: activeToday,
+      label: "DAU (Active Today)",
+      value: dauVal,
       suffix: "users",
       icon: Users,
       color: "text-emerald-600 dark:text-emerald-400",
       bg: "bg-emerald-50 dark:bg-emerald-500/10",
       pulse: true,
+      subtext: `${overview?.new_users_today ?? 0} new • ${overview?.returning_users_today ?? 0} returning`,
     },
     {
-      label: "New Today",
-      value: newToday,
-      suffix: "signups",
-      icon: UserPlus,
+      label: "WAU (Trailing 7D)",
+      value: wauVal,
+      suffix: "users",
+      icon: TrendingUp,
       color: "text-indigo-600 dark:text-indigo-400",
       bg: "bg-indigo-50 dark:bg-indigo-500/10",
+      subtext: `${overview?.existing_users_7d ?? 0} established users`,
     },
     {
-      label: "Returning",
-      value: returning,
+      label: "MAU (Trailing 30D)",
+      value: mauVal,
       suffix: "users",
+      icon: Activity,
+      color: "text-purple-600 dark:text-purple-400",
+      bg: "bg-purple-50 dark:bg-purple-500/10",
+      subtext: `${overview?.existing_users_30d ?? 0} established users`,
+    },
+    {
+      label: "DAU/MAU Stickiness",
+      value: `${stickinessVal}%`,
+      suffix: "ratio",
+      icon: Zap,
+      color: "text-amber-600 dark:text-amber-400",
+      bg: "bg-amber-50 dark:bg-amber-500/10",
+      subtext: stickinessVal >= 20 ? "High habit formation" : "Infrequent check-ins",
+    },
+    {
+      label: "Returning Share of DAU",
+      value: `${returningShare}%`,
+      suffix: "retention",
       icon: RefreshCw,
       color: "text-sky-600 dark:text-sky-400",
       bg: "bg-sky-50 dark:bg-sky-500/10",
-    },
-    {
-      label: "Retention Rate",
-      value: retentionPct,
-      suffix: "%",
-      icon: TrendingUp,
-      color: "text-amber-600 dark:text-amber-400",
-      bg: "bg-amber-50 dark:bg-amber-500/10",
+      subtext: `${100 - returningShare}% from today's signups`,
     },
   ];
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-7xl mx-auto pb-12">
+    <div className="flex flex-col gap-6 w-full max-w-7xl mx-auto pb-16">
+      {/* Page Header */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3 text-slate-900 dark:text-white tracking-tight">
             <span className="p-2.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl">
               <Activity size={24} />
             </span>
-            User Activity Metrics
+            User Activity & Retention Intelligence
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1.5">
-            Track daily, weekly, and monthly active user trends across the platform.
+            Real-time cohort retention, habit stickiness, WAU decomposition, and slippage diagnostics.
           </p>
         </div>
       </header>
 
+      {/* Sanity / Reliability Banner */}
+      <ActivitySanityBanner sanity={sanity} />
+
       {/* Slippage CRM Alert */}
-      {meta?.at_risk_count > 0 && (
+      {meta && meta.at_risk_count > 0 && (
         <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs animate-in fade-in duration-300">
           <div className="flex gap-3 items-start sm:items-center">
             <span className="p-2 bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-xl shrink-0">
               <AlertTriangle size={20} />
             </span>
             <div>
-              <h4 className="text-slate-900 dark:text-white font-bold text-sm">CRM Re-engagement Recommended</h4>
+              <h4 className="text-slate-900 dark:text-white font-bold text-sm">
+                CRM Re-engagement Recommended
+              </h4>
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                We detected <span className="text-amber-700 dark:text-amber-400 font-bold">{meta.at_risk_count} at-risk users</span> who have been inactive for 14+ days.
+                We detected{" "}
+                <span className="text-amber-700 dark:text-amber-400 font-bold">
+                  {meta.at_risk_count} at-risk users
+                </span>{" "}
+                inactive for 14+ days.
               </p>
             </div>
           </div>
@@ -133,19 +189,19 @@ export default async function ActivityPage() {
         </div>
       )}
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {kpis.map(({ label, value, suffix, icon: Icon, color, bg, pulse }) => (
+      {/* KPI Cards Row */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {kpis.map(({ label, value, suffix, icon: Icon, color, bg, pulse, subtext }) => (
           <div
             key={label}
-            className="bg-white dark:bg-[#0d121f] border border-slate-200/80 dark:border-white/[0.08] rounded-xl p-5 flex flex-col gap-3 shadow-xs transition-colors"
+            className="bg-white dark:bg-[#0d121f] border border-slate-200/80 dark:border-white/[0.08] rounded-xl p-4 flex flex-col justify-between shadow-xs transition-colors"
           >
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
                 {label}
               </span>
-              <span className={`p-2 ${bg} ${color} rounded-lg`}>
-                <Icon size={16} />
+              <span className={`p-1.5 ${bg} ${color} rounded-lg`}>
+                <Icon size={14} />
               </span>
             </div>
             <div className="flex items-baseline">
@@ -155,23 +211,39 @@ export default async function ActivityPage() {
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
               )}
-              <span className={`text-3xl font-bold font-mono ${color}`}>{value}</span>
-              <span className="text-slate-400 dark:text-slate-500 text-xs ml-1.5 font-medium">{suffix}</span>
+              <span className={`text-2xl font-bold font-mono ${color}`}>{value}</span>
+              <span className="text-slate-400 dark:text-slate-500 text-[11px] ml-1.5 font-medium">
+                {suffix}
+              </span>
             </div>
+            {subtext && (
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-mono">
+                {subtext}
+              </p>
+            )}
           </div>
         ))}
       </div>
 
-      <Suspense
-        fallback={
-          <div className="h-96 flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm">
-            Loading charts...
-          </div>
-        }
-      >
-        <ActivityCharts dau={dau} wau={wau} mau={mau} />
-      </Suspense>
+      {/* Row 2: Daily Breakdown & Weekly Decomposition */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ActivityDecompositionChart initialData={breakdown} />
+        <WeeklyDecompositionChart data={weeklyDecomp} />
+      </div>
 
+      {/* Row 3: Cohort Retention Analysis (Matrix Heatmap & Day-N Curves) */}
+      <CohortRetentionMatrix cohorts={cohortMatrix} dayN={dayN} />
+
+      {/* Row 4: Engagement Scatter Plot (Recency vs. 30D Active Frequency Quadrant) */}
+      <EngagementScatterChart users={scatterUsers} />
+
+      {/* Row 5: 30-Day Engagement Depth & Signup Source Retention */}
+      <EngagementDepthAndSource frequency={freqBuckets} sources={sourceRetention} />
+
+      {/* Row 6: Win-Back & Slippage CRM List */}
+      <WinBackUsersTable users={winBackUsers} />
+
+      {/* Row 7: Recent Active Users */}
       <Suspense
         fallback={
           <div className="h-48 flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm">

@@ -276,6 +276,107 @@ export async function fetchUserActivity(userId: string) {
   return res.json();
 }
 
+export async function fetchActivityOverview() {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/metrics/activity-overview`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch activity overview");
+  return res.json();
+}
+
+export async function fetchActivityBreakdown(days = 30) {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/metrics/activity-breakdown?days=${days}`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch activity breakdown");
+  return res.json();
+}
+
+export async function fetchWeeklyDecomposition(weeks = 12) {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/metrics/weekly-decomposition?weeks=${weeks}`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch weekly decomposition");
+  return res.json();
+}
+
+export async function fetchCohortMatrix(weeks = 8) {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/metrics/cohort-matrix?weeks=${weeks}`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch cohort matrix");
+  return res.json();
+}
+
+export async function fetchDayNRetention(weeks = 8) {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/metrics/day-n-retention?weeks=${weeks}`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch day-n retention");
+  return res.json();
+}
+
+export async function fetchSourceRetention() {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/metrics/source-retention`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch source retention");
+  return res.json();
+}
+
+export async function fetchEngagementFrequency() {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/metrics/engagement-frequency`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch engagement frequency");
+  return res.json();
+}
+
+export async function fetchEngagementScatter() {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/metrics/engagement-scatter`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch engagement scatter");
+  return res.json();
+}
+
+export async function fetchWinBackUsers(limit = 50) {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/metrics/win-back-users?limit=${limit}`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch win-back users");
+  return res.json();
+}
+
+export async function fetchSanityCheck() {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/metrics/sanity-check`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch sanity check");
+  return res.json();
+}
+
+
 export async function fetchPredictionsMeta() {
   const headers = await getHeaders();
   const res = await fetch(`${API_URL}/admin/predictions/meta`, {
