@@ -314,5 +314,21 @@ export async function bulkSuppressEmailsClient(emails: string[], reason?: string
   return res.json();
 }
 
+export async function fetchActivityDashboardBundleClient() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/metrics/activity-dashboard-bundle`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => null);
+    throw new Error(errData?.detail || "Failed to fetch activity dashboard bundle");
+  }
+  return res.json();
+}
+
+
 
 

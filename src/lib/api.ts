@@ -376,6 +376,17 @@ export async function fetchSanityCheck() {
   return res.json();
 }
 
+export async function fetchActivityDashboardBundle() {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/metrics/activity-dashboard-bundle`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch activity dashboard bundle");
+  return res.json();
+}
+
+
 
 export async function fetchPredictionsMeta() {
   const headers = await getHeaders();
