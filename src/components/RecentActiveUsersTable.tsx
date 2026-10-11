@@ -101,8 +101,8 @@ export default function RecentActiveUsersTable({
       </div>
 
       {/* Desktop Table View */}
-      <div className="hidden md:block overflow-x-auto">
-        <table className="w-full text-left text-sm text-slate-600 dark:text-slate-400">
+      <div className="hidden md:block overflow-x-auto w-full">
+        <table className="w-full min-w-[950px] text-left text-sm text-slate-600 dark:text-slate-400">
           <thead className="bg-slate-50 dark:bg-white/[0.02] text-slate-500 dark:text-slate-400 border-b border-slate-200/80 dark:border-white/[0.08]">
             <tr>
               <th className={thClass} onClick={() => handleSort("full_name")}>
@@ -123,7 +123,9 @@ export default function RecentActiveUsersTable({
               <th className={`${thClass} text-right`} onClick={() => handleSort("total_value")}>
                 Value (INR) <SortIcon col="total_value" sortKey={sortKey} sortDir={sortDir} />
               </th>
-              <th className="px-6 py-3.5 whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-right">Actions</th>
+              <th className="px-6 py-3.5 whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-right sticky right-0 bg-slate-50/95 dark:bg-[#0d121f]/95 backdrop-blur-xs z-10 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.06)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.3)]">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200/60 dark:divide-white/[0.05]">
@@ -164,7 +166,7 @@ export default function RecentActiveUsersTable({
                   <td className="px-6 py-4 whitespace-nowrap text-right font-mono font-medium text-slate-900 dark:text-white">
                     {user.total_value > 0 ? `₹${user.total_value.toLocaleString("en-IN")}` : "-"}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                  <td className="px-6 py-4 whitespace-nowrap text-right sticky right-0 bg-white/95 dark:bg-[#0d121f]/95 group-hover:bg-slate-50/95 dark:group-hover:bg-[#131b2e]/95 backdrop-blur-xs z-10 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.06)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.3)]">
                     <div className="flex justify-end items-center gap-3">
                       <Link
                         href={`/users/${user.id}`}

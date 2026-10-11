@@ -487,7 +487,8 @@ export default function UsersTableClient({
 
       {/* Desktop Table Grid */}
       <div className="hidden md:block bg-white dark:bg-[#0d121f] border border-slate-200 dark:border-white/[0.08] rounded-2xl shadow-xs overflow-hidden transition-colors">
-        <Table>
+        <div className="overflow-x-auto w-full">
+          <Table className="min-w-[1050px]">
           <TableHead>
             <tr>
               <TableHeaderCell className="w-16">#ID</TableHeaderCell>
@@ -510,7 +511,9 @@ export default function UsersTableClient({
               <TableHeaderCell sortable direction={sortConfig?.key === "total_value" ? sortConfig.direction : null} onSort={() => handleSort("total_value")} className="text-right">
                 Total Value
               </TableHeaderCell>
-              <TableHeaderCell className="text-right pr-5">Actions</TableHeaderCell>
+              <TableHeaderCell className="text-right pr-5 sticky right-0 bg-slate-50/95 dark:bg-[#070a13]/95 backdrop-blur-xs z-20 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.06)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.3)]">
+                Actions
+              </TableHeaderCell>
             </tr>
           </TableHead>
           <TableBody>
@@ -583,7 +586,7 @@ export default function UsersTableClient({
                     : "—"}
                 </TableCell>
 
-                <TableCell className="text-right whitespace-nowrap pr-5">
+                <TableCell className="text-right whitespace-nowrap pr-5 sticky right-0 bg-white/95 dark:bg-[#0d121f]/95 group-hover:bg-slate-50/95 dark:group-hover:bg-[#131b2e]/95 backdrop-blur-xs z-10 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.06)] dark:shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.3)]">
                   <div className="flex items-center gap-1.5 justify-end">
                     <Link
                       href={`/users/${user.id}`}
@@ -608,6 +611,7 @@ export default function UsersTableClient({
             ))}
           </TableBody>
         </Table>
+      </div>
 
         {filteredUsers.length === 0 && (
           <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-xs">
