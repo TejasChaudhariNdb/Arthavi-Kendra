@@ -27,13 +27,14 @@ export default async function ActivityPage() {
   const [initialBundle, recentUsers, meta] = await Promise.all([
     fetchActivityDashboardBundle().catch(() => null),
     fetchUsersWithFilters({
-      active_within_hours: hoursSinceMidnightIST(),
-      limit: 100,
+      active_within_hours: 24 * 7, // 7 days window for weekday filters
+      limit: 250,
       sort_by: "last_active_at",
       sort_order: "desc",
     }).catch(() => []),
     fetchUsersMeta({ at_risk: true }).catch(() => null),
   ]);
+
 
   const todayIST = todayISTString();
 

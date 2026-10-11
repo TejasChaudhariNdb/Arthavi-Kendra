@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   Activity,
@@ -11,8 +11,7 @@ import {
   AlertTriangle,
   Zap,
   Clock,
-  Database,
-  CheckCircle2,
+  Calendar,
 } from "lucide-react";
 import { fetchActivityDashboardBundleClient } from "@/lib/auth-client";
 import ActivitySanityBanner from "@/components/ActivitySanityBanner";
@@ -22,7 +21,7 @@ import CohortRetentionMatrix from "@/components/CohortRetentionMatrix";
 import EngagementScatterChart from "@/components/EngagementScatterChart";
 import EngagementDepthAndSource from "@/components/EngagementDepthAndSource";
 import WinBackUsersTable from "@/components/WinBackUsersTable";
-import RecentActiveUsersTable from "@/components/RecentActiveUsersTable";
+import RecentActiveUsersTable, { DayOption } from "@/components/RecentActiveUsersTable";
 
 const CACHE_KEY = "arthavi_activity_dashboard_cache";
 const CACHE_TTL_MS = 20 * 60 * 1000; // 20 minutes cache
@@ -56,6 +55,32 @@ export default function ActivityDashboardClient({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<number | null>(null);
   const [fromCache, setFromCache] = useState(false);
+  const [selectedDayOffset, setSelectedDayOffset] = useState<number | null>(0); // 0 = Today
+
+  // Generate 7-day options in IST
+  const daysList: DayOption[] = useMemo(() => {
+    const list: DayOption[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(Date.now() + 5.5 * 60 * 60 * 1000 - i * 24 * 60 * 60 * 1000);
+      const dateStr = d.toISOString().slice(0, 10);
+      const weekday = d.toLocaleDateString("en-US", { weekday: "short" });
+      const formatted = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      let label = "";
+      if (i === 0) label = "Today";
+      else if (i === 1) label = "Yesterday";
+      else label = `${weekday} (${i}d ago)`;
+
+      list.push({
+        offset: i,
+        dateStr,
+        label,
+        shortLabel: i === 0 ? "Today" : i === 1 ? "Yesterday" : `${i}d ago`,
+        weekday,
+        formatted,
+      });
+    }
+    return list;
+  }, []);
 
   // Check localStorage on mount
   useEffect(() => {
@@ -72,10 +97,9 @@ export default function ActivityDashboardClient({
         }
       }
     } catch {
-      // ignore JSON parse errors
+      // ignore
     }
 
-    // If initialBundle was provided by SSR, cache it
     if (initialBundle) {
       const now = Date.now();
       setLastRefreshedAt(now);
@@ -85,7 +109,7 @@ export default function ActivityDashboardClient({
           JSON.stringify({ data: initialBundle, savedAt: now })
         );
       } catch {
-        // quota exceeded or private mode
+        // ignore
       }
     }
   }, [initialBundle]);
@@ -114,22 +138,57 @@ export default function ActivityDashboardClient({
   };
 
   const overview = bundle?.overview;
-  const dauVal = overview?.dau ?? recentUsers.length;
+  const breakdown = bundle?.breakdown || [];
+
+  // Find stats for selected day offset
+  const selectedDay = useMemo(() => {
+    if (selectedDayOffset === null) return null;
+    return daysList.find((d) => d.offset === selectedDayOffset) || null;
+  }, [selectedDayOffset, daysList]);
+
+  const selectedDayStats = useMemo(() => {
+    if (!selectedDay) return null;
+    return breakdown.find((b) => b.date === selectedDay.dateStr) || null;
+  }, [selectedDay, breakdown]);
+
+  // DAU values for selected day
+  const activeCountForDay = selectedDayStats
+    ? selectedDayStats.dau
+    : selectedDayOffset === 0
+    ? overview?.dau ?? recentUsers.length
+    : 0;
+
+  const newForDay = selectedDayStats
+    ? selectedDayStats.new_users
+    : selectedDayOffset === 0
+    ? overview?.new_users_today ?? 0
+    : 0;
+
+  const returningForDay = selectedDayStats
+    ? selectedDayStats.returning_users
+    : selectedDayOffset === 0
+    ? overview?.returning_users_today ?? 0
+    : 0;
+
   const wauVal = overview?.wau ?? 0;
   const mauVal = overview?.mau ?? 0;
   const stickinessVal = overview?.dau_mau_stickiness_pct ?? 0;
-  const returningShare = overview?.returning_share_pct ?? 0;
+  const returningShare = selectedDayStats
+    ? selectedDayStats.returning_pct
+    : overview?.returning_share_pct ?? 0;
 
   const kpis = [
     {
-      label: "DAU (Active Today)",
-      value: dauVal,
+      label: selectedDay
+        ? `Active ${selectedDay.label}`
+        : "Active Across 7D",
+      value: activeCountForDay,
       suffix: "users",
       icon: Users,
       color: "text-emerald-600 dark:text-emerald-400",
       bg: "bg-emerald-50 dark:bg-emerald-500/10",
-      pulse: true,
-      subtext: `${overview?.new_users_today ?? 0} new • ${overview?.returning_users_today ?? 0} returning`,
+      pulse: selectedDayOffset === 0,
+      subtext: `${newForDay} new • ${returningForDay} returning`,
     },
     {
       label: "WAU (Trailing 7D)",
@@ -159,13 +218,13 @@ export default function ActivityDashboardClient({
       subtext: stickinessVal >= 20 ? "High habit formation" : "Infrequent check-ins",
     },
     {
-      label: "Returning Share of DAU",
+      label: selectedDay ? `${selectedDay.shortLabel} Returning %` : "Returning Share",
       value: `${returningShare}%`,
-      suffix: "retention",
+      suffix: "share",
       icon: RefreshCw,
       color: "text-sky-600 dark:text-sky-400",
       bg: "bg-sky-50 dark:bg-sky-500/10",
-      subtext: `${100 - returningShare}% from today's signups`,
+      subtext: `${(100 - returningShare).toFixed(0)}% from new signups`,
     },
   ];
 
@@ -251,7 +310,47 @@ export default function ActivityDashboardClient({
         </div>
       )}
 
-      {/* KPI Cards Row */}
+      {/* 7-Day Day Selector Pill Bar */}
+      <div className="bg-white dark:bg-[#0d121f] border border-slate-200/80 dark:border-white/[0.08] rounded-xl p-3 shadow-xs flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+          <span className="p-1.5 rounded-md bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+            <Calendar size={14} />
+          </span>
+          <span>Day Filter:</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          {daysList.map((day) => {
+            const isSelected = selectedDayOffset === day.offset;
+            const stats = breakdown.find((b) => b.date === day.dateStr);
+            return (
+              <button
+                key={day.offset}
+                onClick={() => setSelectedDayOffset(day.offset)}
+                className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
+                  isSelected
+                    ? "bg-indigo-600 text-white font-semibold shadow-xs"
+                    : "bg-slate-50 hover:bg-slate-100 dark:bg-white/[0.03] dark:hover:bg-white/[0.06] text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-white/[0.05]"
+                }`}
+              >
+                <span>{day.label}</span>
+                {stats && (
+                  <span
+                    className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${
+                      isSelected
+                        ? "bg-indigo-500 text-white font-bold"
+                        : "bg-slate-200/60 dark:bg-white/[0.08] text-slate-600 dark:text-slate-400 font-semibold"
+                    }`}
+                  >
+                    {stats.dau}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* KPI Cards Row (updates with day filter) */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {kpis.map(({ label, value, suffix, icon: Icon, color, bg, pulse, subtext }) => (
           <div
@@ -259,10 +358,10 @@ export default function ActivityDashboardClient({
             className="bg-white dark:bg-[#0d121f] border border-slate-200/80 dark:border-white/[0.08] rounded-xl p-4 flex flex-col justify-between shadow-xs transition-colors"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider truncate">
                 {label}
               </span>
-              <span className={`p-1.5 ${bg} ${color} rounded-lg`}>
+              <span className={`p-1.5 ${bg} ${color} rounded-lg shrink-0`}>
                 <Icon size={14} />
               </span>
             </div>
@@ -279,7 +378,7 @@ export default function ActivityDashboardClient({
               </span>
             </div>
             {subtext && (
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-mono">
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-mono truncate">
                 {subtext}
               </p>
             )}
@@ -289,7 +388,7 @@ export default function ActivityDashboardClient({
 
       {/* Row 2: Daily Breakdown & Weekly Decomposition */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ActivityDecompositionChart initialData={bundle?.breakdown || []} />
+        <ActivityDecompositionChart initialData={breakdown} />
         <WeeklyDecompositionChart data={bundle?.weekly_decomp || []} />
       </div>
 
@@ -311,8 +410,14 @@ export default function ActivityDashboardClient({
       {/* Row 6: Win-Back & Slippage CRM List */}
       <WinBackUsersTable users={bundle?.win_back_users || []} />
 
-      {/* Row 7: Recent Active Users */}
-      <RecentActiveUsersTable users={recentUsers} todayIST={todayIST} />
+      {/* Row 7: Recent Active Users (Filtered by Day) */}
+      <RecentActiveUsersTable
+        users={recentUsers}
+        todayIST={todayIST}
+        selectedOffset={selectedDayOffset}
+        onSelectOffset={setSelectedDayOffset}
+        daysList={daysList}
+      />
     </div>
   );
 }
