@@ -329,6 +329,406 @@ export async function fetchActivityDashboardBundleClient() {
   return res.json();
 }
 
+// ==========================================
+// Email Campaigns & User Outreach API Client
+// ==========================================
+
+export async function fetchCampaignsClient(params?: {
+  search?: string;
+  status?: string;
+  campaign_type?: string;
+  skip?: number;
+  limit?: number;
+}) {
+  const token = getToken();
+  const searchParams = new URLSearchParams();
+  if (params?.search) searchParams.set("search", params.search);
+  if (params?.status) searchParams.set("status", params.status);
+  if (params?.campaign_type) searchParams.set("campaign_type", params.campaign_type);
+  if (params?.skip !== undefined) searchParams.set("skip", params.skip.toString());
+  if (params?.limit !== undefined) searchParams.set("limit", params.limit.toString());
+
+  const res = await fetch(`${API_URL}/admin/campaigns?${searchParams.toString()}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Failed to fetch email campaigns");
+  }
+  return res.json();
+}
+
+export async function createCampaignClient(data: any) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/campaigns`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Failed to create campaign");
+  }
+  return res.json();
+}
+
+export async function fetchCampaignDetailClient(campaignId: number) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/campaigns/${campaignId}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Failed to fetch campaign detail");
+  }
+  return res.json();
+}
+
+export async function updateCampaignClient(campaignId: number, data: any) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/campaigns/${campaignId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Failed to update campaign");
+  }
+  return res.json();
+}
+
+export async function deleteCampaignClient(campaignId: number) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/campaigns/${campaignId}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Failed to delete campaign");
+  }
+  return res.json();
+}
+
+export async function duplicateCampaignClient(campaignId: number) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/campaigns/${campaignId}/duplicate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Failed to duplicate campaign");
+  }
+  return res.json();
+}
+
+export async function cancelCampaignClient(campaignId: number) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/campaigns/${campaignId}/cancel`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Failed to cancel campaign");
+  }
+  return res.json();
+}
+
+export async function retryFailedCampaignClient(campaignId: number) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/campaigns/${campaignId}/retry-failed`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Failed to retry failed recipients");
+  }
+  return res.json();
+}
+
+export async function validateRecipientsClient(data: {
+  manual_emails?: string;
+  selected_user_ids?: number[];
+  segment_type?: string;
+  campaign_type?: string;
+}) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/campaigns/validate-recipients`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Failed to validate recipients");
+  }
+  return res.json();
+}
+
+export async function previewEmailClient(data: {
+  subject: string;
+  html_body: string;
+  preview_text?: string;
+  cta_config?: any;
+  sample_recipient?: any;
+  is_marketing?: boolean;
+}) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/campaigns/preview`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Failed to render email preview");
+  }
+  return res.json();
+}
+
+export async function sendTestEmailClient(data: {
+  test_emails: string[];
+  subject: string;
+  html_body: string;
+  preview_text?: string;
+  sender_name?: string;
+  sender_email?: string;
+  reply_to_email?: string;
+  cta_config?: any;
+}) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/campaigns/test-send`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Failed to send test email");
+  }
+  return res.json();
+}
+
+export async function sendCampaignClient(campaignId: number) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/campaigns/${campaignId}/send`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Failed to queue campaign send");
+  }
+  return res.json();
+}
+
+export async function fetchCampaignRecipientsClient(
+  campaignId: number,
+  params?: { status?: string; search?: string; skip?: number; limit?: number }
+) {
+  const token = getToken();
+  const searchParams = new URLSearchParams();
+  if (params?.status) searchParams.set("status", params.status);
+  if (params?.search) searchParams.set("search", params.search);
+  if (params?.skip !== undefined) searchParams.set("skip", params.skip.toString());
+  if (params?.limit !== undefined) searchParams.set("limit", params.limit.toString());
+
+  const res = await fetch(`${API_URL}/admin/campaigns/${campaignId}/recipients?${searchParams.toString()}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Failed to fetch campaign recipients");
+  }
+  return res.json();
+}
+
+export async function fetchAllDeliveryLogsClient(params?: {
+  status?: string;
+  search?: string;
+  campaign_id?: number;
+  skip?: number;
+  limit?: number;
+}) {
+  const token = getToken();
+  const searchParams = new URLSearchParams();
+  if (params?.status) searchParams.set("status", params.status);
+  if (params?.search) searchParams.set("search", params.search);
+  if (params?.campaign_id) searchParams.set("campaign_id", params.campaign_id.toString());
+  if (params?.skip !== undefined) searchParams.set("skip", params.skip.toString());
+  if (params?.limit !== undefined) searchParams.set("limit", params.limit.toString());
+
+  const res = await fetch(`${API_URL}/admin/campaigns/logs/all?${searchParams.toString()}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Failed to fetch delivery logs");
+  }
+  return res.json();
+}
+
+export async function fetchSegmentsSummaryClient() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/campaigns/segments/summary`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Failed to fetch segments summary");
+  }
+  return res.json();
+}
+
+export async function searchCampaignUsersClient(query?: string, skip?: number, limit?: number) {
+  const token = getToken();
+  const searchParams = new URLSearchParams();
+  if (query) searchParams.set("query", query);
+  if (skip !== undefined) searchParams.set("skip", skip.toString());
+  if (limit !== undefined) searchParams.set("limit", limit.toString());
+
+  const res = await fetch(`${API_URL}/admin/campaigns/users/search?${searchParams.toString()}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Failed to search campaign users");
+  }
+  return res.json();
+}
+
+export async function fetchTemplatesClient() {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/campaigns/templates/list`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Failed to fetch email templates");
+  }
+  return res.json();
+}
+
+export async function createTemplateClient(data: any) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/campaigns/templates`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Failed to create template");
+  }
+  return res.json();
+}
+
+export async function fetchTemplateDetailClient(templateId: number) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/campaigns/templates/${templateId}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Failed to fetch template detail");
+  }
+  return res.json();
+}
+
+export async function updateTemplateClient(templateId: number, data: any) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/campaigns/templates/${templateId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Failed to update template");
+  }
+  return res.json();
+}
+
+export async function deleteTemplateClient(templateId: number) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/campaigns/templates/${templateId}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.detail || "Failed to delete template");
+  }
+  return res.json();
+}
+
 
 
 

@@ -19,6 +19,7 @@ import {
   TrendingUp,
   Sparkles,
   CreditCard,
+  Mail,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { ThemeToggle } from "./ThemeProvider";
@@ -53,6 +54,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "Growth & Intelligence",
     items: [
+      { href: "/campaigns", label: "Email Campaigns", icon: Mail },
       { href: "/buy-signals", label: "Recommended Signals", icon: CandlestickChart },
       { href: "/predictions", label: "Market Predictions", icon: TrendingUp },
       { href: "/analytics", label: "Platform Analytics", icon: LineChart },
