@@ -45,6 +45,10 @@ export interface DayOption {
 
 function toISTDateString(dateStr: string | null): string {
   if (!dateStr) return "";
+  // If the backend already formatted it as "YYYY-MM-DD ...", extract the date part directly
+  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+    return dateStr.slice(0, 10);
+  }
   const d = new Date(dateStr);
   const ist = new Date(d.getTime() + 5.5 * 60 * 60 * 1000);
   return ist.toISOString().slice(0, 10);
