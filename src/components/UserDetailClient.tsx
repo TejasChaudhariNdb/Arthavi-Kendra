@@ -23,6 +23,14 @@ import {
   Bell,
   Sliders,
   AlertTriangle,
+  Landmark,
+  ShieldCheck,
+  Coins,
+  Home,
+  CalendarClock,
+  FileSpreadsheet,
+  Clock,
+  ShieldAlert,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -85,7 +93,7 @@ export default function UserDetailClient({
 }: {
   data: any;
   activity?: any;
-  initialTab?: "overview" | "holdings" | "chats";
+  initialTab?: "overview" | "holdings" | "vaults" | "chats";
   initialChatId?: number | null;
 }) {
   const {
@@ -98,13 +106,22 @@ export default function UserDetailClient({
     predictions = [],
     profiles = [],
     notification_preferences = {},
+    fixed_income = [],
+    insurance = [],
+    gold = [],
+    real_estate = [],
+    sips = [],
+    cas_imports = [],
   } = data;
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"overview" | "holdings" | "chats">(
+  const [activeTab, setActiveTab] = useState<"overview" | "holdings" | "vaults" | "chats">(
     initialTab,
   );
   const [selectedHoldingType, setSelectedHoldingType] = useState<
     "ALL" | "EQUITY" | "MUTUAL_FUND"
+  >("ALL");
+  const [vaultFilter, setVaultFilter] = useState<
+    "ALL" | "FIXED_INCOME" | "INSURANCE" | "GOLD" | "REAL_ESTATE" | "SIPS" | "CAS"
   >("ALL");
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
 
@@ -148,13 +165,11 @@ export default function UserDetailClient({
         ? chats[0].id
         : null;
 
-  // Derived Data
-  const totalInvested = portfolios.reduce(
+  // Derived Multi-Asset Data
+  const totalPortfolioInvested = portfolios.reduce(
     (acc: number, p: any) => acc + (p.invested_value || 0),
     0,
   );
-  const totalProfit = (user.total_value || 0) - totalInvested;
-  const isProfit = totalProfit >= 0;
 
   const equityValue = portfolios
     .filter((p: any) => p.type === "EQUITY")
@@ -163,10 +178,52 @@ export default function UserDetailClient({
     .filter((p: any) => p.type === "MUTUAL_FUND")
     .reduce((acc: number, p: any) => acc + (p.current_value || 0), 0);
 
+  const fiTotal = fixed_income
+    .filter((h: any) => (h.status || "").toUpperCase() !== "CLOSED")
+    .reduce((acc: number, h: any) => acc + (h.current_balance || h.principal_amount || 0), 0);
+
+  const goldTotal = gold.reduce(
+    (acc: number, g: any) => acc + (g.current_value || g.total_invested || 0),
+    0,
+  );
+
+  const reTotal = real_estate.reduce(
+    (acc: number, r: any) => acc + (r.current_valuation || r.purchase_price || 0),
+    0,
+  );
+
+  const totalVaultInvested =
+    fixed_income.reduce((acc: number, h: any) => acc + (h.principal_amount || 0), 0) +
+    gold.reduce((acc: number, g: any) => acc + (g.total_invested || 0), 0) +
+    real_estate.reduce((acc: number, r: any) => acc + (r.purchase_price || 0), 0);
+
+  const allTotalInvested = totalPortfolioInvested + totalVaultInvested;
+  const totalProfit = (user.total_value || 0) - allTotalInvested;
+  const isProfit = totalProfit >= 0;
+
+  const totalProtectionCover = insurance.reduce(
+    (acc: number, i: any) => acc + (i.sum_assured || 0),
+    0,
+  );
+  const totalAnnualPremium = insurance.reduce(
+    (acc: number, i: any) => acc + (i.annual_premium || 0),
+    0,
+  );
+
+  const monthlySipOutflow = sips
+    .filter((s: any) => (s.status || "ACTIVE").toUpperCase() === "ACTIVE")
+    .reduce((acc: number, s: any) => acc + (s.amount || 0), 0);
+
+  const totalVaultItems =
+    fixed_income.length + insurance.length + gold.length + real_estate.length + sips.length;
+
   const allocationData = [
-    { name: "Equity", value: equityValue },
     { name: "Mutual Funds", value: mfValue },
-  ];
+    { name: "Equity", value: equityValue },
+  { name: "Fixed Income", value: fiTotal },
+  { name: "Gold", value: goldTotal },
+  { name: "Real Estate", value: reTotal },
+  ].filter((item) => item.value > 0);
 
   // Activity Processing
   const processActivityData = () => {
@@ -289,11 +346,11 @@ export default function UserDetailClient({
                 Joined{" "}
                 {user.created_at
                   ? new Date(user.created_at).toLocaleDateString("en-IN", {
-                      timeZone: "Asia/Kolkata",
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })
+                    timeZone: "Asia/Kolkata",
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })
                   : "N/A"}
               </span>
             </div>
@@ -320,7 +377,17 @@ export default function UserDetailClient({
                 ? "bg-white dark:bg-indigo-600 text-slate-900 dark:text-white shadow-xs font-bold"
                 : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white",
             )}>
-            Holdings & Portfolios
+            Holdings &amp; Portfolios
+          </button>
+          <button
+            onClick={() => setActiveTab("vaults")}
+            className={clsx(
+              "px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer",
+              activeTab === "vaults"
+                ? "bg-white dark:bg-indigo-600 text-slate-900 dark:text-white shadow-xs font-bold"
+                : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white",
+            )}>
+            <Layers size={13} /> Vaults ({totalVaultItems})
           </button>
           <button
             onClick={() => setActiveTab("chats")}
@@ -341,27 +408,112 @@ export default function UserDetailClient({
           {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatsCard
-              label="Total Value"
+              label="Total Multi-Asset Value"
               value={`₹${(user.total_value || 0).toLocaleString("en-IN")}`}
               icon={Wallet}
+              trend={`${portfolios.length} portfolios | ${totalVaultItems} vault assets`}
             />
             <StatsCard
-              label="Total Invested"
-              value={`₹${totalInvested.toLocaleString("en-IN")}`}
+              label="Total Invested Cost"
+              value={`₹${allTotalInvested.toLocaleString("en-IN")}`}
               icon={Layers}
-            />
-            <StatsCard
-              label="Total Return"
-              value={`₹${Math.abs(totalProfit).toLocaleString("en-IN")}`}
-              icon={TrendingUp}
-              trend={isProfit ? "Profit" : "Loss"}
+              trend={isProfit ? `+₹${totalProfit.toLocaleString("en-IN")} Gain` : `-₹${Math.abs(totalProfit).toLocaleString("en-IN")} Loss`}
               trendUp={isProfit}
             />
             <StatsCard
-              label="Portfolios Linked"
-              value={user.portfolio_count}
-              icon={PieChart}
+              label="Insurance Protection Cover"
+              value={`₹${totalProtectionCover.toLocaleString("en-IN")}`}
+              icon={ShieldCheck}
+              trend={insurance.length > 0 ? `${insurance.length} policies | ₹${totalAnnualPremium.toLocaleString("en-IN")}/yr prem` : "No active policy"}
+              trendUp={insurance.length > 0}
             />
+            <StatsCard
+              label="Monthly SIP Outflow"
+              value={`₹${monthlySipOutflow.toLocaleString("en-IN")}/mo`}
+              icon={CalendarClock}
+              trend={`${sips.filter((s: any) => (s.status || "ACTIVE").toUpperCase() === "ACTIVE").length} active SIPs`}
+              trendUp={monthlySipOutflow > 0}
+            />
+          </div>
+
+          {/* Multi-Asset Wealth Distribution Bar */}
+          <div className="bg-white dark:bg-[#0d121f] border border-slate-200/80 dark:border-white/[0.08] rounded-xl p-5 shadow-xs transition-colors">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-slate-700 dark:text-slate-300 font-semibold text-xs uppercase tracking-wider flex items-center gap-2">
+                <Layers size={14} className="text-indigo-600 dark:text-indigo-400" />
+                Multi-Asset Allocation Breakdown
+              </h3>
+              <span className="text-[11px] font-mono text-slate-400">
+                Net Worth: ₹{(user.total_value || 0).toLocaleString("en-IN")}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-1">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#070a13] border border-slate-200/60 dark:border-white/[0.06]">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
+                  <span className="text-[10px] font-semibold uppercase text-slate-500 dark:text-slate-400">Mutual Funds</span>
+                </div>
+                <p className="text-sm font-bold font-mono text-slate-900 dark:text-white">
+                  ₹{mfValue.toLocaleString("en-IN")}
+                </p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  {user.total_value > 0 ? ((mfValue / user.total_value) * 100).toFixed(1) : 0}% of net worth
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#070a13] border border-slate-200/60 dark:border-white/[0.06]">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0" />
+                  <span className="text-[10px] font-semibold uppercase text-slate-500 dark:text-slate-400">Equities</span>
+                </div>
+                <p className="text-sm font-bold font-mono text-slate-900 dark:text-white">
+                  ₹{equityValue.toLocaleString("en-IN")}
+                </p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  {user.total_value > 0 ? ((equityValue / user.total_value) * 100).toFixed(1) : 0}% of net worth
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#070a13] border border-slate-200/60 dark:border-white/[0.06]">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                  <span className="text-[10px] font-semibold uppercase text-slate-500 dark:text-slate-400">Fixed Income</span>
+                </div>
+                <p className="text-sm font-bold font-mono text-slate-900 dark:text-white">
+                  ₹{fiTotal.toLocaleString("en-IN")}
+                </p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  {fixed_income.length} deposits / accounts
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#070a13] border border-slate-200/60 dark:border-white/[0.06]">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+                  <span className="text-[10px] font-semibold uppercase text-slate-500 dark:text-slate-400">Gold Bullion</span>
+                </div>
+                <p className="text-sm font-bold font-mono text-slate-900 dark:text-white">
+                  ₹{goldTotal.toLocaleString("en-IN")}
+                </p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  {gold.reduce((acc: number, g: any) => acc + (g.weight_grams || 0), 0).toFixed(1)}g total weight
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#070a13] border border-slate-200/60 dark:border-white/[0.06]">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
+                  <span className="text-[10px] font-semibold uppercase text-slate-500 dark:text-slate-400">Real Estate</span>
+                </div>
+                <p className="text-sm font-bold font-mono text-slate-900 dark:text-white">
+                  ₹{reTotal.toLocaleString("en-IN")}
+                </p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  {real_estate.length} properties tracked
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* CRM Profile Insights */}
@@ -1107,7 +1259,7 @@ export default function UserDetailClient({
                     {h.type === "EQUITY" ? "Stock" : "MF"}
                   </span>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-[11px] border-t border-slate-200/60 dark:border-white/[0.05] pt-2.5">
                   <div className="flex justify-between">
                     <span className="text-slate-400">Qty:</span>
@@ -1134,6 +1286,515 @@ export default function UserDetailClient({
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* MULTI-ASSET VAULTS TAB */}
+      {activeTab === "vaults" && (
+        <div className="space-y-6">
+          {/* Sub-vault category filter */}
+          <div className="flex items-center justify-between flex-wrap gap-3 bg-white dark:bg-[#0d121f] p-4 rounded-xl border border-slate-200/80 dark:border-white/[0.08] shadow-xs">
+            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+              <Filter size={16} />
+              <span className="text-xs font-semibold uppercase tracking-wider">Vault Filter:</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { key: "ALL", label: `All Vaults (${totalVaultItems + cas_imports.length})` },
+                { key: "FIXED_INCOME", label: `Fixed Income (${fixed_income.length})`, icon: Landmark },
+                { key: "INSURANCE", label: `Insurance (${insurance.length})`, icon: ShieldCheck },
+                { key: "GOLD", label: `Gold & Bullion (${gold.length})`, icon: Coins },
+                { key: "REAL_ESTATE", label: `Real Estate (${real_estate.length})`, icon: Home },
+                { key: "SIPS", label: `SIPs (${sips.length})`, icon: CalendarClock },
+                { key: "CAS", label: `CAS & Ingestions (${cas_imports.length})`, icon: FileSpreadsheet },
+              ].map((item) => (
+                <button
+                  key={item.key}
+                  onClick={() => setVaultFilter(item.key as any)}
+                  className={clsx(
+                    "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer",
+                    vaultFilter === item.key
+                      ? "bg-indigo-600 text-white shadow-xs"
+                      : "bg-slate-100 dark:bg-white/[0.04] text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/[0.08]",
+                  )}>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 1. FIXED INCOME SECTION */}
+          {(vaultFilter === "ALL" || vaultFilter === "FIXED_INCOME") && (
+            <div className="bg-white dark:bg-[#0d121f] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/50">
+                    <Landmark size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Fixed Income &amp; Deposits</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Bank FDs, RDs, PPF &amp; Tax-saving deposits</p>
+                  </div>
+                </div>
+                <div className="text-right font-mono">
+                  <span className="text-xs text-slate-400">Total Value: </span>
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">₹{fiTotal.toLocaleString("en-IN")}</span>
+                </div>
+              </div>
+
+              {fixed_income.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {fixed_income.map((h: any) => (
+                    <div
+                      key={h.id}
+                      className="p-4 rounded-xl bg-slate-50 dark:bg-[#070a13] border border-slate-200/80 dark:border-white/[0.06] flex flex-col justify-between shadow-2xs space-y-3">
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md uppercase bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                            {h.deposit_type || "FD"}
+                          </span>
+                          <span className={clsx(
+                            "text-[10px] font-semibold px-2 py-0.5 rounded-md",
+                            (h.status || "").toUpperCase() === "ACTIVE"
+                              ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300"
+                              : "bg-slate-100 dark:bg-white/[0.05] text-slate-500"
+                          )}>
+                            {h.status || "ACTIVE"}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-white">{h.institution_name || "Bank Deposit"}</h4>
+                        {h.account_number_or_fdr && (
+                          <p className="text-xs font-mono text-slate-500 dark:text-slate-400 mt-0.5">
+                            FDR: {h.account_number_or_fdr}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="space-y-1.5 pt-2 border-t border-slate-200/60 dark:border-white/[0.06] text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-slate-500 dark:text-slate-400">Principal:</span>
+                          <span className="font-mono font-semibold text-slate-900 dark:text-white">
+                            ₹{Number(h.principal_amount || 0).toLocaleString("en-IN")}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500 dark:text-slate-400">Interest Rate:</span>
+                          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                            {h.interest_rate_pct ? `${h.interest_rate_pct}% p.a.` : "N/A"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500 dark:text-slate-400">Current Balance:</span>
+                          <span className="font-mono font-bold text-slate-900 dark:text-white">
+                            ₹{Number(h.current_balance || h.principal_amount || 0).toLocaleString("en-IN")}
+                          </span>
+                        </div>
+                        {h.maturity_date && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-500 dark:text-slate-400">Maturity Date:</span>
+                            <span className="font-mono text-slate-700 dark:text-slate-300">{h.maturity_date}</span>
+                          </div>
+                        )}
+                        {h.maturity_amount && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-500 dark:text-slate-400">Maturity Amount:</span>
+                            <span className="font-mono font-semibold text-slate-900 dark:text-white">
+                              ₹{Number(h.maturity_amount).toLocaleString("en-IN")}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-slate-400 dark:text-slate-500 text-xs">
+                  No fixed income or deposit holdings recorded.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 2. INSURANCE POLICIES SECTION */}
+          {(vaultFilter === "ALL" || vaultFilter === "INSURANCE") && (
+            <div className="bg-white dark:bg-[#0d121f] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/50">
+                    <ShieldCheck size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Family Insurance Vault</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Life, Health, and Critical Illness coverage</p>
+                  </div>
+                </div>
+                <div className="text-right font-mono">
+                  <span className="text-xs text-slate-400">Total Cover: </span>
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">₹{totalProtectionCover.toLocaleString("en-IN")}</span>
+                </div>
+              </div>
+
+              {insurance.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {insurance.map((ins: any) => (
+                    <div
+                      key={ins.id}
+                      className="p-4 rounded-xl bg-slate-50 dark:bg-[#070a13] border border-slate-200/80 dark:border-white/[0.06] flex flex-col justify-between shadow-2xs space-y-3">
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md uppercase bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                            {ins.policy_type || "INSURANCE"}
+                          </span>
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300">
+                            {ins.status || "ACTIVE"}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-white">{ins.policy_name || ins.insurer_name}</h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{ins.insurer_name} {ins.policy_number ? `• ${ins.policy_number}` : ""}</p>
+                      </div>
+
+                      <div className="space-y-1.5 pt-2 border-t border-slate-200/60 dark:border-white/[0.06] text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-slate-500 dark:text-slate-400">Sum Assured (Cover):</span>
+                          <span className="font-mono font-bold text-blue-600 dark:text-blue-400">
+                            ₹{Number(ins.sum_assured || 0).toLocaleString("en-IN")}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500 dark:text-slate-400">Annual Premium:</span>
+                          <span className="font-mono font-semibold text-slate-900 dark:text-white">
+                            ₹{Number(ins.annual_premium || 0).toLocaleString("en-IN")}{ins.premium_frequency ? ` (${ins.premium_frequency})` : ""}
+                          </span>
+                        </div>
+                        {ins.next_premium_due_date && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-500 dark:text-slate-400">Renewal Due Date:</span>
+                            <span className="font-mono text-amber-600 dark:text-amber-400 font-semibold">{ins.next_premium_due_date}</span>
+                          </div>
+                        )}
+                        {ins.nominee_name && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-500 dark:text-slate-400">Nominee:</span>
+                            <span className="text-slate-700 dark:text-slate-300 font-medium">{ins.nominee_name}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-slate-400 dark:text-slate-500 text-xs">
+                  No insurance policies recorded.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 3. GOLD HOLDINGS SECTION */}
+          {(vaultFilter === "ALL" || vaultFilter === "GOLD") && (
+            <div className="bg-white dark:bg-[#0d121f] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/50">
+                    <Coins size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Live Gold &amp; Bullion</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Physical Gold, Digital Gold &amp; Sovereign Gold Bonds</p>
+                  </div>
+                </div>
+                <div className="text-right font-mono">
+                  <span className="text-xs text-slate-400">Market Value: </span>
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">₹{goldTotal.toLocaleString("en-IN")}</span>
+                </div>
+              </div>
+
+              {gold.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {gold.map((g: any) => (
+                    <div
+                      key={g.id}
+                      className="p-4 rounded-xl bg-slate-50 dark:bg-[#070a13] border border-slate-200/80 dark:border-white/[0.06] flex flex-col justify-between shadow-2xs space-y-3">
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md uppercase bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                            {g.purity || "24K"} • {g.asset_type || "GOLD"}
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {g.purchase_date || "Date N/A"}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-white">{g.asset_name || "Gold Asset"}</h4>
+                        <p className="text-xs font-mono text-slate-500 dark:text-slate-400">Weight: <strong>{g.weight_grams} grams</strong></p>
+                      </div>
+
+                      <div className="space-y-1.5 pt-2 border-t border-slate-200/60 dark:border-white/[0.06] text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-slate-500 dark:text-slate-400">Invested Cost:</span>
+                          <span className="font-mono text-slate-700 dark:text-slate-300">
+                            ₹{Number(g.total_invested || 0).toLocaleString("en-IN")}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500 dark:text-slate-400">Current Valuation:</span>
+                          <span className="font-mono font-bold text-slate-900 dark:text-white">
+                            ₹{Number(g.current_value || 0).toLocaleString("en-IN")}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500 dark:text-slate-400">Live Rate / Gram:</span>
+                          <span className="font-mono text-slate-700 dark:text-slate-300">₹{Number(g.current_rate_per_gram || 0).toLocaleString("en-IN")}</span>
+                        </div>
+                        <div className="flex justify-between font-semibold">
+                          <span className="text-slate-500 dark:text-slate-400">Gain / Loss:</span>
+                          <span className={clsx(
+                            "font-mono",
+                            (g.gain || 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                          )}>
+                            {(g.gain || 0) >= 0 ? "+" : ""}₹{Number(g.gain || 0).toLocaleString("en-IN")}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-slate-400 dark:text-slate-500 text-xs">
+                  No gold or bullion holdings recorded.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 4. REAL ESTATE HOLDINGS SECTION */}
+          {(vaultFilter === "ALL" || vaultFilter === "REAL_ESTATE") && (
+            <div className="bg-white dark:bg-[#0d121f] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-200/60 dark:border-purple-800/50">
+                    <Home size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Real Estate &amp; Properties</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Residential, Commercial &amp; Land assets</p>
+                  </div>
+                </div>
+                <div className="text-right font-mono">
+                  <span className="text-xs text-slate-400">Total Valuation: </span>
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">₹{reTotal.toLocaleString("en-IN")}</span>
+                </div>
+              </div>
+
+              {real_estate.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {real_estate.map((re_item: any) => (
+                    <div
+                      key={re_item.id}
+                      className="p-4 rounded-xl bg-slate-50 dark:bg-[#070a13] border border-slate-200/80 dark:border-white/[0.06] flex flex-col justify-between shadow-2xs space-y-3">
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md uppercase bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                            {re_item.property_type || "REAL ESTATE"}
+                          </span>
+                          <span className={clsx(
+                            "text-[10px] font-semibold px-2 py-0.5 rounded-md",
+                            re_item.is_rented
+                              ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300"
+                              : "bg-slate-100 dark:bg-white/[0.05] text-slate-500"
+                          )}>
+                            {re_item.is_rented ? "RENTED" : "SELF-OCCUPIED"}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-white">{re_item.property_name}</h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{re_item.location || "Location not specified"}</p>
+                      </div>
+
+                      <div className="space-y-1.5 pt-2 border-t border-slate-200/60 dark:border-white/[0.06] text-xs">
+                        {re_item.area_sqft && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-500 dark:text-slate-400">Area:</span>
+                            <span className="font-mono text-slate-700 dark:text-slate-300">{re_item.area_sqft} sq.ft</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span className="text-slate-500 dark:text-slate-400">Purchase Price:</span>
+                          <span className="font-mono text-slate-700 dark:text-slate-300">
+                            ₹{Number(re_item.purchase_price || 0).toLocaleString("en-IN")}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500 dark:text-slate-400">Current Valuation:</span>
+                          <span className="font-mono font-bold text-slate-900 dark:text-white">
+                            ₹{Number(re_item.current_valuation || 0).toLocaleString("en-IN")}
+                          </span>
+                        </div>
+                        {re_item.is_rented && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-500 dark:text-slate-400">Monthly Rent:</span>
+                            <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+                              ₹{Number(re_item.monthly_rental_income || 0).toLocaleString("en-IN")}/mo
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-slate-400 dark:text-slate-500 text-xs">
+                  No real estate properties recorded.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 5. MUTUAL FUND SIPS SECTION */}
+          {(vaultFilter === "ALL" || vaultFilter === "SIPS") && (
+            <div className="bg-white dark:bg-[#0d121f] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/50">
+                    <CalendarClock size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Systematic Investment Plans (SIPs)</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Recurring automated investments &amp; debit schedules</p>
+                  </div>
+                </div>
+                <div className="text-right font-mono">
+                  <span className="text-xs text-slate-400">Monthly Flow: </span>
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">₹{monthlySipOutflow.toLocaleString("en-IN")}/mo</span>
+                </div>
+              </div>
+
+              {sips.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {sips.map((sip: any) => (
+                    <div
+                      key={sip.id}
+                      className="p-4 rounded-xl bg-slate-50 dark:bg-[#070a13] border border-slate-200/80 dark:border-white/[0.06] flex flex-col justify-between shadow-2xs space-y-3">
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md uppercase bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                            {sip.frequency || "MONTHLY"}
+                          </span>
+                          <span className={clsx(
+                            "text-[10px] font-semibold px-2 py-0.5 rounded-md",
+                            (sip.status || "").toUpperCase() === "ACTIVE"
+                              ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300"
+                              : "bg-slate-100 dark:bg-white/[0.05] text-slate-500"
+                          )}>
+                            {sip.status || "ACTIVE"}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-white line-clamp-1">{sip.scheme_name || "Mutual Fund Scheme"}</h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{sip.amc || "AMC"} {sip.folio_number ? `• Folio ${sip.folio_number}` : ""}</p>
+                      </div>
+
+                      <div className="space-y-1.5 pt-2 border-t border-slate-200/60 dark:border-white/[0.06] text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-slate-500 dark:text-slate-400">Installment Amount:</span>
+                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                            ₹{Number(sip.amount || 0).toLocaleString("en-IN")}
+                          </span>
+                        </div>
+                        {sip.sip_day && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-500 dark:text-slate-400">Debit Day:</span>
+                            <span className="font-mono text-slate-700 dark:text-slate-300">{sip.sip_day}th of month</span>
+                          </div>
+                        )}
+                        {sip.next_sip_date && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-500 dark:text-slate-400">Next SIP Date:</span>
+                            <span className="font-mono text-slate-700 dark:text-slate-300 font-semibold">{sip.next_sip_date}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span className="text-slate-500 dark:text-slate-400">Total Invested to Date:</span>
+                          <span className="font-mono text-slate-700 dark:text-slate-300">₹{Number(sip.total_invested || 0).toLocaleString("en-IN")}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-slate-400 dark:text-slate-500 text-xs">
+                  No active or detected SIPs found.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 6. CAS STATEMENTS & INGESTIONS SECTION */}
+          {(vaultFilter === "ALL" || vaultFilter === "CAS") && (
+            <div className="bg-white dark:bg-[#0d121f] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 border border-cyan-200/60 dark:border-cyan-800/50">
+                    <FileSpreadsheet size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">CAS Statements &amp; Ingestion Pipeline</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">CAMS, KFintech &amp; Broker tradebook uploads</p>
+                  </div>
+                </div>
+                <div className="text-right font-mono">
+                  <span className="text-xs text-slate-400">Uploads: </span>
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">{cas_imports.length} files</span>
+                </div>
+              </div>
+
+              {cas_imports.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {cas_imports.map((cas: any) => (
+                    <div
+                      key={cas.id}
+                      className="p-4 rounded-xl bg-slate-50 dark:bg-[#070a13] border border-slate-200/80 dark:border-white/[0.06] flex flex-col justify-between shadow-2xs space-y-3">
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md uppercase bg-cyan-50 dark:bg-cyan-950/50 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800">
+                            {cas.rta || "CAS"} • {cas.cas_type || "SUMMARY"}
+                          </span>
+                          <span className={clsx(
+                            "text-[10px] font-semibold px-2 py-0.5 rounded-md",
+                            ["SUCCESS", "COMPLETED", "PROCESSED"].includes((cas.status || "").toUpperCase())
+                              ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300"
+                              : "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300"
+                          )}>
+                            {cas.status || "SUCCESS"}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate" title={cas.file_name}>
+                          {cas.file_name || "Statement File"}
+                        </h4>
+                        <p className="text-xs text-slate-400 font-mono mt-0.5">Uploaded {cas.created_at}</p>
+                      </div>
+
+                      <div className="space-y-1.5 pt-2 border-t border-slate-200/60 dark:border-white/[0.06] text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-slate-500 dark:text-slate-400">Folios Ingested:</span>
+                          <span className="font-mono text-slate-700 dark:text-slate-300 font-semibold">{cas.folios_count ?? "-"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500 dark:text-slate-400">Schemes Parsed:</span>
+                          <span className="font-mono text-slate-700 dark:text-slate-300 font-semibold">{cas.schemes_count ?? "-"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500 dark:text-slate-400">Transactions:</span>
+                          <span className="font-mono text-slate-700 dark:text-slate-300 font-semibold">{cas.transactions_count ?? "-"}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-slate-400 dark:text-slate-500 text-xs">
+                  No CAS statements or broker tradebooks uploaded by this user.
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

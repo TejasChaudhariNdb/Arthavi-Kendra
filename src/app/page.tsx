@@ -4,6 +4,7 @@ import AnalyticsOverview from "@/components/AnalyticsOverview";
 import StatsCard from "@/components/StatsCard";
 import GrowthChart from "@/components/GrowthChart";
 import { FamilyDynamicsSection } from "@/components/FamilyDynamicsSection";
+import MultiAssetVaultsSection from "@/components/MultiAssetVaultsSection";
 import {
   Users,
   Briefcase,
@@ -15,6 +16,7 @@ import {
   Bell,
   AlertTriangle,
   ExternalLink,
+  Layers,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -42,6 +44,21 @@ function SnapshotSkeleton() {
   );
 }
 
+function VaultsSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="bg-slate-100 dark:bg-[#0d121f] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-6 h-40 animate-pulse"></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div
+            key={i}
+            className="bg-slate-100 dark:bg-[#0d121f] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-5 h-44 animate-pulse"></div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ChatsSkeleton() {
   return (
     <div className="bg-slate-100 dark:bg-[#0d121f] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-6 shadow-xs mt-8">
@@ -64,6 +81,9 @@ async function StatsSection() {
   } catch {
     return <div className="text-rose-500">Failed to load stats.</div>;
   }
+
+  const multiAssetAum = Number(stats.totalMultiAssetAum || stats.totalAum || 0);
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       <StatsCard
@@ -82,15 +102,17 @@ async function StatsSection() {
         pulse={true}
       />
       <StatsCard
-        label="Total Portfolios"
+        label="Portfolios & Vaults"
         value={stats.totalPortfolios}
         icon={Briefcase}
         trend={`MF: ${stats.totalMfPortfolios || 0} | Stocks: ${stats.totalEquityPortfolios || 0}`}
       />
       <StatsCard
-        label="Total AUM"
-        value={`₹${(stats.totalAum / 10000000).toFixed(2)} Cr`}
+        label="Platform Multi-Asset AUM"
+        value={`₹${(multiAssetAum / 10000000).toFixed(2)} Cr`}
         icon={DollarSign}
+        trend="Across 5 Asset Classes"
+        trendUp={true}
       />
       <StatsCard
         label="Notifications Enabled"
@@ -101,6 +123,20 @@ async function StatsSection() {
       />
     </div>
   );
+}
+
+async function MultiAssetVaultsSummarySection() {
+  let stats;
+  try {
+    stats = await fetchStats();
+  } catch {
+    return (
+      <div className="text-rose-500 p-4 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/20">
+        Failed to load multi-asset vaults data.
+      </div>
+    );
+  }
+  return <MultiAssetVaultsSection stats={stats} />;
 }
 
 async function FamilyDynamicsSummarySection() {
@@ -140,6 +176,8 @@ async function OperatorSnapshotSection() {
   const dau = Number(stats.dau || 0);
   const notificationsEnabled = Number(stats.notificationsEnabled || 0);
   const newUsersToday = Number(stats.newUsersToday || 0);
+  const fiMaturing = Number(stats.vaultStats?.fixedIncome?.maturingSoon90d || 0);
+  const insRenewals = Number(stats.vaultStats?.insurance?.renewalsDue60d || 0);
 
   const weeklySignups = (growthData?.growth15 || []).slice(-7).reduce(
     (sum: number, item: { users?: number }) => sum + Number(item.users || 0),
@@ -160,6 +198,12 @@ async function OperatorSnapshotSection() {
     totalUsers > 0 ? (notificationsEnabled / totalUsers) * 100 : 0;
 
   const attentionItems = [
+    fiMaturing > 0
+      ? `${fiMaturing} fixed deposits maturing in ≤90 days. Send renewal/reinvestment alerts.`
+      : "",
+    insRenewals > 0
+      ? `${insRenewals} insurance policies with premium renewal due in ≤60 days.`
+      : "",
     newUsersToday === 0
       ? "No new users today. Check acquisition channels."
       : "",
@@ -171,16 +215,22 @@ async function OperatorSnapshotSection() {
       : "",
   ].filter(Boolean);
   const todayFocus: Array<{ label: string; href: string }> = [
+    ...(fiMaturing > 0
+      ? [{ label: `Review ${fiMaturing} maturing fixed deposits`, href: "/users" }]
+      : []),
+    ...(insRenewals > 0
+      ? [{ label: `Review ${insRenewals} insurance renewals`, href: "/users" }]
+      : []),
     ...(newUsersToday === 0
       ? [{ label: "Review new signup channels", href: "/analytics" }]
       : []),
     ...(dauPct < 10
       ? [
-          {
-            label: "Open active users (24h)",
-            href: "/users?active_24=1&sort_by=last_active_at&sort_order=desc",
-          },
-        ]
+        {
+          label: "Open active users (24h)",
+          href: "/users?active_24=1&sort_by=last_active_at&sort_order=desc",
+        },
+      ]
       : []),
     ...(recentChats.length > 0
       ? [{ label: "Scan latest AI chats for issues", href: "/chats" }]
@@ -400,6 +450,10 @@ export default function Dashboard() {
 
         <Suspense fallback={<StatsSkeleton />}>
           <StatsSection />
+        </Suspense>
+
+        <Suspense fallback={<VaultsSkeleton />}>
+          <MultiAssetVaultsSummarySection />
         </Suspense>
 
         <Suspense fallback={<div className="bg-slate-100 dark:bg-[#0d121f] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-6 h-48 animate-pulse"></div>}>
