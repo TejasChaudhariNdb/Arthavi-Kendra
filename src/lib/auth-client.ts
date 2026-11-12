@@ -1,11 +1,9 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// BUG-019: browser calls go through the same-origin proxy, which adds the HttpOnly admin token on the server.
+const API_URL = "/api/proxy";
 
+// The token can no longer be read in the browser (HttpOnly). The proxy adds it instead.
+// Kept so the call sites below stay unchanged.
 function getToken() {
-  if (typeof document !== "undefined") {
-    // Basic regex to parse cookie
-    const match = document.cookie.match(new RegExp("(^| )admin_token=([^;]+)"));
-    if (match) return match[2];
-  }
   return "";
 }
 
@@ -13,7 +11,8 @@ export async function loginAdmin(credentials: {
   username: string;
   password: string;
 }) {
-  const res = await fetch(`${API_URL}/admin/auth/login`, {
+  // Sets the HttpOnly admin cookie on the server.
+  const res = await fetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams(credentials),

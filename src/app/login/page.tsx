@@ -19,8 +19,8 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const data = await loginAdmin({ username: email, password });
-      document.cookie = `admin_token=${data.access_token}; path=/; max-age=6048000; SameSite=Lax`;
+      // The server sets the HttpOnly admin cookie during login (BUG-019).
+      await loginAdmin({ username: email, password });
       router.push("/");
       router.refresh();
     } catch (err) {

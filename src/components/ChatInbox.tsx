@@ -13,13 +13,11 @@ import {
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// BUG-019: same-origin proxy adds the HttpOnly admin token on the server.
+const API_URL = "/api/proxy";
 
+// The token is no longer readable in the browser; the proxy adds it.
 function getToken() {
-  if (typeof document !== "undefined") {
-    const match = document.cookie.match(new RegExp("(^| )admin_token=([^;]+)"));
-    if (match) return match[2];
-  }
   return "";
 }
 

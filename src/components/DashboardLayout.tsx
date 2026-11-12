@@ -57,8 +57,9 @@ export default function DashboardLayout({
 
   const { title, section } = getPageTitle(pathname);
 
-  const handleLogout = () => {
-    document.cookie = "admin_token=; path=/; max-age=0; SameSite=Lax";
+  const handleLogout = async () => {
+    // BUG-019: the server clears the HttpOnly cookie; browser code cannot.
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
     router.push("/login");
     router.refresh();
   };
