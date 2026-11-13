@@ -22,11 +22,14 @@ import EngagementScatterChart from "@/components/EngagementScatterChart";
 import EngagementDepthAndSource from "@/components/EngagementDepthAndSource";
 import WinBackUsersTable from "@/components/WinBackUsersTable";
 import RecentActiveUsersTable, { DayOption } from "@/components/RecentActiveUsersTable";
+import FounderSnapshot, { FounderMetrics } from "@/components/FounderSnapshot";
 
-const CACHE_KEY = "arthavi_activity_dashboard_cache";
+// v2: bundle now includes `founder`; older cached bundles lack it.
+const CACHE_KEY = "arthavi_activity_dashboard_cache_v2";
 const CACHE_TTL_MS = 20 * 60 * 1000; // 20 minutes cache
 
 interface DashboardBundle {
+  founder?: FounderMetrics | null;
   overview: any;
   breakdown: any[];
   weekly_decomp: any[];
@@ -245,10 +248,10 @@ export default function ActivityDashboardClient({
             <span className="p-2.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl">
               <Activity size={24} />
             </span>
-            User Activity & Retention Intelligence
+            Activity &amp; Growth
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1.5">
-            Real-time cohort retention, habit stickiness, WAU decomposition, and slippage diagnostics.
+            Who is using Arthavi, how fast it&apos;s growing, and where new users drop off.
           </p>
         </div>
 
@@ -277,6 +280,13 @@ export default function ActivityDashboardClient({
           </button>
         </div>
       </header>
+
+      {/* Founder snapshot: growth, activation funnel, feature adoption */}
+      <FounderSnapshot metrics={bundle?.founder} />
+
+      <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight -mb-2 mt-2">
+        Daily activity &amp; retention
+      </h2>
 
       {/* Sanity / Reliability Banner */}
       <ActivitySanityBanner sanity={bundle?.sanity ?? null} />
