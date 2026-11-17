@@ -20,6 +20,7 @@ import {
   Sparkles,
   CreditCard,
   Mail,
+  Timer,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { ThemeToggle } from "./ThemeProvider";
@@ -68,6 +69,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/feedback", label: "Feedback & Suggestions", icon: MessageSquarePlus },
       { href: "/notifications", label: "Mailing & Push", icon: Bell },
       { href: "/updates", label: "What's New", icon: Sparkles },
+      { href: "/cron-runs", label: "Cron Runs", icon: Timer },
       { href: "/settings", label: "Admin & Security", icon: Settings },
     ],
   },
