@@ -440,3 +440,61 @@ export async function fetchMailingListStats() {
 }
 
 
+
+// ── Cron run log (/admin/cron-runs; table from backend migration_cron_runs.sql) ──
+export interface CronRunRow {
+  id: number;
+  job: string;
+  trigger: string | null;
+  status: "ok" | "partial" | "failed" | string;
+  started_at: string | null;
+  finished_at: string | null;
+  duration_ms: number | null;
+  stocks_ms: number | null;
+  navs_ms: number | null;
+  predictions_ms: number | null;
+  stocks_updated: number | null;
+  unique_amfi_codes: number | null;
+  navs_fetched: number | null;
+  navs_failed: number | null;
+  schemes_updated: number | null;
+  snapshots_updated: number | null;
+  portfolios_refreshed: number | null;
+  predictions_evaluated: number | null;
+  rss_start_mb: number | null;
+  rss_end_mb: number | null;
+  peak_rss_mb: number | null;
+  peak_scope: "run" | "process" | string | null;
+  error_count: number;
+  navs_from_bulk: number | null;
+  navs_per_code: number | null;
+  bulk_available: boolean | null;
+  details?: Record<string, unknown> & { errors?: string[]; errors_truncated?: boolean };
+}
+
+export interface CronRunList {
+  available: boolean;
+  total: number;
+  items: CronRunRow[];
+}
+
+export async function fetchCronRuns(limit = 30, skip = 0): Promise<CronRunList> {
+  const headers = await getHeaders();
+  const res = await fetch(
+    `${API_URL}/admin/cron-runs?limit=${limit}&skip=${skip}&job=market_data`,
+    { headers, cache: "no-store" },
+  );
+  if (!res.ok) throw new Error(`Failed to fetch cron runs (${res.status})`);
+  return res.json();
+}
+
+export async function fetchCronRun(id: number): Promise<CronRunRow | null> {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/cron-runs/${id}`, {
+    headers,
+    cache: "no-store",
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Failed to fetch cron run (${res.status})`);
+  return res.json();
+}

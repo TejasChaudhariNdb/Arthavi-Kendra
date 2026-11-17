@@ -33,6 +33,7 @@ function getPageTitle(pathname: string): { title: string; section: string } {
   if (pathname.startsWith("/chats")) return { title: "AI Conversations Inbox", section: "Platform Controls" };
   if (pathname.startsWith("/feedback")) return { title: "Feedback & Suggestions", section: "Platform Controls" };
   if (pathname.startsWith("/notifications")) return { title: "Mailing List & Push Studio", section: "Platform Controls" };
+  if (pathname.startsWith("/cron-runs")) return { title: "Cron Runs & Data Refresh Health", section: "Platform Controls" };
   if (pathname.startsWith("/updates")) return { title: "What's New & Changelogs", section: "Platform Controls" };
   if (pathname.startsWith("/settings")) return { title: "Admin & Security Settings", section: "Platform Controls" };
   return { title: "Arthavi Admin Kendra", section: "Operations" };
