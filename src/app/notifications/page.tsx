@@ -711,7 +711,7 @@ export default function NotificationsPage() {
                 </label>
                 <textarea
                   rows={4}
-                  placeholder="e.g. SGX Nifty indicates action today. Make your prediction now!"
+                  placeholder="e.g. NAVs and closing prices are updated. See how your portfolio moved today."
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-[#070a13] border border-slate-200 dark:border-white/[0.08] rounded-xl px-4 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 resize-none"
@@ -924,33 +924,6 @@ export default function NotificationsPage() {
                     type="checkbox"
                     checked={editForm.email_security_alerts}
                     onChange={(e) => setEditForm({ ...editForm, email_security_alerts: e.target.checked })}
-                    className="w-4 h-4 accent-indigo-600 rounded cursor-pointer"
-                  />
-                </div>
-              </div>
-
-              {/* Push Options */}
-              <div className="space-y-2 pt-2">
-                <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Push Channels
-                </p>
-
-                <div className="p-2.5 bg-slate-50/60 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04] rounded-xl flex items-center justify-between">
-                  <span className="text-slate-800 dark:text-slate-200 font-medium">Daily Market Open/Close Push</span>
-                  <input
-                    type="checkbox"
-                    checked={editForm.push_daily_nudge}
-                    onChange={(e) => setEditForm({ ...editForm, push_daily_nudge: e.target.checked })}
-                    className="w-4 h-4 accent-indigo-600 rounded cursor-pointer"
-                  />
-                </div>
-
-                <div className="p-2.5 bg-slate-50/60 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04] rounded-xl flex items-center justify-between">
-                  <span className="text-slate-800 dark:text-slate-200 font-medium">Market Prediction Results</span>
-                  <input
-                    type="checkbox"
-                    checked={editForm.push_market_predictions}
-                    onChange={(e) => setEditForm({ ...editForm, push_market_predictions: e.target.checked })}
                     className="w-4 h-4 accent-indigo-600 rounded cursor-pointer"
                   />
                 </div>

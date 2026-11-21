@@ -388,26 +388,6 @@ export async function fetchActivityDashboardBundle() {
 
 
 
-export async function fetchPredictionsMeta() {
-  const headers = await getHeaders();
-  const res = await fetch(`${API_URL}/admin/predictions/meta`, {
-    cache: "no-store",
-    headers,
-  });
-  if (!res.ok) throw new Error("Failed to fetch predictions meta");
-  return res.json();
-}
-
-export async function fetchPredictionsUsers() {
-  const headers = await getHeaders();
-  const res = await fetch(`${API_URL}/admin/predictions/users`, {
-    cache: "no-store",
-    headers,
-  });
-  if (!res.ok) throw new Error("Failed to fetch predictions users");
-  return res.json();
-}
-
 export async function fetchMailingList(params: {
   skip?: number;
   limit?: number;

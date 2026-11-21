@@ -103,7 +103,6 @@ export default function UserDetailClient({
     all_holdings = [],
     recent_transactions = [],
     chats = [],
-    predictions = [],
     profiles = [],
     notification_preferences = {},
     fixed_income = [],
@@ -803,50 +802,6 @@ export default function UserDetailClient({
                 </div>
               </div>
 
-              {/* Market Predictions */}
-              <div className="bg-white dark:bg-[#0d121f] border border-slate-200/80 dark:border-white/[0.08] rounded-xl p-6 shadow-xs transition-colors">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-slate-700 dark:text-slate-300 font-semibold text-xs uppercase tracking-wider flex items-center gap-2">
-                    <Activity size={15} className="text-indigo-600 dark:text-indigo-400" /> Market Predictions
-                  </h3>
-                  <span className="text-[11px] text-slate-400 dark:text-slate-500">
-                    Nifty Forecasts
-                  </span>
-                </div>
-
-                <div className="divide-y divide-slate-200/60 dark:divide-white/[0.05]">
-                  {predictions && predictions.length > 0 ? (
-                    predictions.map((p: any, idx: number) => (
-                      <div
-                        key={idx}
-                        className="flex justify-between items-center py-3 hover:bg-slate-50 dark:hover:bg-white/[0.02] px-2 rounded-lg transition-colors">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-slate-900 dark:text-white font-medium text-xs">
-                              Nifty 50
-                            </span>
-                            <span
-                              className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded ${p.prediction === "BULL" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400" : "bg-rose-50 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400"}`}>
-                              {p.prediction}
-                            </span>
-                          </div>
-                          <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 font-mono">
-                            Target: {p.target_date}
-                          </div>
-                        </div>
-                        <div
-                          className={`text-xs font-bold uppercase ${p.result === "WON" ? "text-emerald-600 dark:text-emerald-400" : p.result === "LOST" ? "text-rose-600 dark:text-rose-400" : "text-slate-400"}`}>
-                          {p.result}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-slate-400 dark:text-slate-500 text-center py-6 text-xs">
-                      No market predictions recorded for this user.
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
 
             {/* Right Col (1 col wide) */}
