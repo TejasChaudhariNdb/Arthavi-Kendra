@@ -27,7 +27,6 @@ function getPageTitle(pathname: string): { title: string; section: string } {
   if (pathname.startsWith("/goals")) return { title: "User Financial Goals", section: "Core Operations" };
   if (pathname.startsWith("/donations")) return { title: "Support & UPI Intent", section: "Core Operations" };
   if (pathname.startsWith("/buy-signals")) return { title: "Recommended Signals", section: "Growth & Intelligence" };
-  if (pathname.startsWith("/predictions")) return { title: "Market Predictions", section: "Growth & Intelligence" };
   if (pathname.startsWith("/analytics")) return { title: "Platform Analytics", section: "Growth & Intelligence" };
   if (pathname.startsWith("/activity")) return { title: "Activity & Retention", section: "Growth & Intelligence" };
   if (pathname.startsWith("/chats")) return { title: "AI Conversations Inbox", section: "Platform Controls" };

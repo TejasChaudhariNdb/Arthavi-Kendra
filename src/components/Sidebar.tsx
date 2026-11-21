@@ -16,7 +16,6 @@ import {
   Target,
   CandlestickChart,
   Activity,
-  TrendingUp,
   Sparkles,
   CreditCard,
   Mail,
@@ -57,7 +56,6 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/campaigns", label: "Email Campaigns", icon: Mail },
       { href: "/buy-signals", label: "Recommended Signals", icon: CandlestickChart },
-      { href: "/predictions", label: "Market Predictions", icon: TrendingUp },
       { href: "/analytics", label: "Platform Analytics", icon: LineChart },
       { href: "/activity", label: "Activity & Retention", icon: Activity },
     ],
