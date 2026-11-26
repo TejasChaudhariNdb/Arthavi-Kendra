@@ -31,6 +31,7 @@ import {
   FileSpreadsheet,
   Clock,
   ShieldAlert,
+  PiggyBank,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -109,6 +110,7 @@ export default function UserDetailClient({
     insurance = [],
     gold = [],
     real_estate = [],
+    nps = [],
     sips = [],
     cas_imports = [],
   } = data;
@@ -120,7 +122,7 @@ export default function UserDetailClient({
     "ALL" | "EQUITY" | "MUTUAL_FUND"
   >("ALL");
   const [vaultFilter, setVaultFilter] = useState<
-    "ALL" | "FIXED_INCOME" | "INSURANCE" | "GOLD" | "REAL_ESTATE" | "SIPS" | "CAS"
+    "ALL" | "FIXED_INCOME" | "INSURANCE" | "GOLD" | "REAL_ESTATE" | "NPS" | "SIPS" | "CAS"
   >("ALL");
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
 
@@ -191,10 +193,18 @@ export default function UserDetailClient({
     0,
   );
 
+  // BUG-092: NPS value (units x NAV) of open accounts, same as the backend total
+  const npsTotal = nps
+    .filter((a: any) => (a.status || "").toUpperCase() !== "CLOSED")
+    .reduce((acc: number, a: any) => acc + (a.value || 0), 0);
+
   const totalVaultInvested =
     fixed_income.reduce((acc: number, h: any) => acc + (h.principal_amount || 0), 0) +
     gold.reduce((acc: number, g: any) => acc + (g.total_invested || 0), 0) +
-    real_estate.reduce((acc: number, r: any) => acc + (r.purchase_price || 0), 0);
+    real_estate.reduce((acc: number, r: any) => acc + (r.purchase_price || 0), 0) +
+    nps
+      .filter((a: any) => (a.status || "").toUpperCase() !== "CLOSED")
+      .reduce((acc: number, a: any) => acc + (a.invested || 0), 0);
 
   const allTotalInvested = totalPortfolioInvested + totalVaultInvested;
   const totalProfit = (user.total_value || 0) - allTotalInvested;
@@ -214,7 +224,7 @@ export default function UserDetailClient({
     .reduce((acc: number, s: any) => acc + (s.amount || 0), 0);
 
   const totalVaultItems =
-    fixed_income.length + insurance.length + gold.length + real_estate.length + sips.length;
+    fixed_income.length + insurance.length + gold.length + real_estate.length + nps.length + sips.length;
 
   const allocationData = [
     { name: "Mutual Funds", value: mfValue },
@@ -222,6 +232,7 @@ export default function UserDetailClient({
   { name: "Fixed Income", value: fiTotal },
   { name: "Gold", value: goldTotal },
   { name: "Real Estate", value: reTotal },
+  { name: "NPS", value: npsTotal },
   ].filter((item) => item.value > 0);
 
   // Activity Processing
@@ -510,6 +521,19 @@ export default function UserDetailClient({
                 </p>
                 <p className="text-[10px] text-slate-400 mt-0.5">
                   {real_estate.length} properties tracked
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#070a13] border border-slate-200/60 dark:border-white/[0.06]">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
+                  <span className="text-[10px] font-semibold uppercase text-slate-500 dark:text-slate-400">NPS</span>
+                </div>
+                <p className="text-sm font-bold font-mono text-slate-900 dark:text-white">
+                  ₹{npsTotal.toLocaleString("en-IN")}
+                </p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  {nps.length} accounts tracked
                 </p>
               </div>
             </div>
@@ -1260,6 +1284,7 @@ export default function UserDetailClient({
                 { key: "INSURANCE", label: `Insurance (${insurance.length})`, icon: ShieldCheck },
                 { key: "GOLD", label: `Gold & Bullion (${gold.length})`, icon: Coins },
                 { key: "REAL_ESTATE", label: `Real Estate (${real_estate.length})`, icon: Home },
+                { key: "NPS", label: `NPS (${nps.length})`, icon: PiggyBank },
                 { key: "SIPS", label: `SIPs (${sips.length})`, icon: CalendarClock },
                 { key: "CAS", label: `CAS & Ingestions (${cas_imports.length})`, icon: FileSpreadsheet },
               ].map((item) => (
@@ -1598,6 +1623,63 @@ export default function UserDetailClient({
               ) : (
                 <div className="text-center py-6 text-slate-400 dark:text-slate-500 text-xs">
                   No real estate properties recorded.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 4b. NPS ACCOUNTS (BUG-092) */}
+          {(vaultFilter === "ALL" || vaultFilter === "NPS") && (
+            <div className="bg-white dark:bg-[#0d121f] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-200/60 dark:border-sky-800/50">
+                    <PiggyBank size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">NPS Accounts</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Units x NAV entered by the user</p>
+                  </div>
+                </div>
+                <div className="text-right font-mono">
+                  <span className="text-xs text-slate-400">Total Value: </span>
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">₹{npsTotal.toLocaleString("en-IN")}</span>
+                </div>
+              </div>
+
+              {nps.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {nps.map((a: any) => (
+                    <div
+                      key={a.id}
+                      className="p-4 rounded-xl bg-slate-50 dark:bg-[#070a13] border border-slate-200/80 dark:border-white/[0.06] space-y-2 text-xs">
+                      <div className="flex justify-between items-start">
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-white">{a.fund_manager}</h4>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                          {a.tier === "TIER_2" ? "TIER II" : "TIER I"}{a.status === "CLOSED" ? " · CLOSED" : ""}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 dark:text-slate-400">Value:</span>
+                        <span className="font-mono font-bold text-slate-900 dark:text-white">₹{Number(a.value || 0).toLocaleString("en-IN")}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 dark:text-slate-400">Contributed:</span>
+                        <span className="font-mono text-slate-700 dark:text-slate-300">₹{Number(a.invested || 0).toLocaleString("en-IN")}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 dark:text-slate-400">XIRR / Equity:</span>
+                        <span className="font-mono text-slate-700 dark:text-slate-300">
+                          {a.xirr !== null && a.xirr !== undefined ? `${a.xirr}%` : "--"} · {a.equity_pct !== null && a.equity_pct !== undefined ? `${a.equity_pct}% E` : "--"}
+                        </span>
+                      </div>
+                      {a.nav_date && <div className="text-[10px] text-slate-400">NAV as of {a.nav_date}</div>}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-slate-400 dark:text-slate-500 text-xs">
+                  No NPS accounts recorded.
                 </div>
               )}
             </div>

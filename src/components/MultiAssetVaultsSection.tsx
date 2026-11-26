@@ -79,6 +79,7 @@ export interface AdminStatsResponse {
     fixedIncomeAum: number;
     goldAum: number;
     realEstateAum: number;
+    npsAum?: number; // BUG-092
   };
   vaultStats?: VaultStatsData;
 }
@@ -118,13 +119,15 @@ export default function MultiAssetVaultsSection({
       breakdown.equityAum +
       breakdown.fixedIncomeAum +
       breakdown.goldAum +
-      breakdown.realEstateAum;
+      breakdown.realEstateAum +
+      (breakdown.npsAum || 0);
 
   const mfPct = totalAum > 0 ? (breakdown.mfAum / totalAum) * 100 : 0;
   const eqPct = totalAum > 0 ? (breakdown.equityAum / totalAum) * 100 : 0;
   const fiPct = totalAum > 0 ? (breakdown.fixedIncomeAum / totalAum) * 100 : 0;
   const rePct = totalAum > 0 ? (breakdown.realEstateAum / totalAum) * 100 : 0;
   const goldPct = totalAum > 0 ? (breakdown.goldAum / totalAum) * 100 : 0;
+  const npsPct = totalAum > 0 ? ((breakdown.npsAum || 0) / totalAum) * 100 : 0;
 
   const fi = vaults.fixedIncome || {
     count: 0,
@@ -230,10 +233,15 @@ export default function MultiAssetVaultsSection({
               className="bg-purple-500 transition-all duration-500"
               title={`Real Estate: ${formatInr(breakdown.realEstateAum)} (${rePct.toFixed(1)}%)`}
             />
+            <div
+              style={{ width: `${Math.max(npsPct, npsPct > 0 ? 2 : 0)}%` }}
+              className="bg-teal-500 transition-all duration-500"
+              title={`NPS: ${formatInr(breakdown.npsAum)} (${npsPct.toFixed(1)}%)`}
+            />
           </div>
 
           {/* Asset Breakdown Chips */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 pt-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-2">
             <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-[#070a13] border border-slate-200/60 dark:border-white/[0.06]">
               <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 dark:bg-indigo-500 shrink-0" />
               <div className="min-w-0">
@@ -304,6 +312,21 @@ export default function MultiAssetVaultsSection({
                   {formatInr(breakdown.realEstateAum)}{" "}
                   <span className="text-[10px] text-slate-400 font-normal">
                     ({rePct.toFixed(0)}%)
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-[#070a13] border border-slate-200/60 dark:border-white/[0.06]">
+              <span className="w-2.5 h-2.5 rounded-full bg-teal-500 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase truncate">
+                  NPS
+                </p>
+                <p className="text-xs font-bold font-mono text-slate-900 dark:text-white truncate">
+                  {formatInr(breakdown.npsAum)}{" "}
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    ({npsPct.toFixed(0)}%)
                   </span>
                 </p>
               </div>
