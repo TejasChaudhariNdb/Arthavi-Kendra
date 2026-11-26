@@ -479,9 +479,10 @@ export async function fetchCronRun(id: number): Promise<CronRunRow | null> {
   return res.json();
 }
 
-export async function fetchDailyUsers() {
+export async function fetchDailyUsers(dates?: string) {
   const headers = await getHeaders();
-  const res = await fetch(`${API_URL}/admin/metrics/daily-users`, {
+  const qs = dates ? `?dates=${encodeURIComponent(dates)}` : "";
+  const res = await fetch(`${API_URL}/admin/metrics/daily-users${qs}`, {
     cache: "no-store",
     headers,
   });
