@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   LineChart,
   Line,
@@ -13,7 +13,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { Bell, Mail, BellOff } from "lucide-react";
+import { Bell, Mail, BellOff, CalendarDays, X } from "lucide-react";
 import { sendNotification } from "@/lib/auth-client";
 
 interface TodayUser {
@@ -38,10 +38,9 @@ interface DormantUser {
   has_push: boolean;
 }
 
-interface DailyUsersData {
-  today: string;
-  summary: {
-    new_today: number;
+interface Summary {
+  date: string;
+  new_today: number;
     new_yesterday: number;
     new_7d: number;
     active_today: number;
@@ -51,8 +50,14 @@ interface DailyUsersData {
     wau: number;
     mau: number;
     stickiness_pct: number;
-    yesterday_new_returned_today: number;
-  };
+  yesterday_new_returned_today: number;
+}
+
+interface DailyUsersData {
+  today: string;
+  dates: string[];
+  summaries: Summary[];
+  users_date: string;
   trend: { date: string; active: number; new: number }[];
   today_users: TodayUser[];
   dormant_users: DormantUser[];
@@ -64,25 +69,75 @@ const box =
 const th = "text-left text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold py-2 px-2";
 const td = "py-2 px-2 text-xs text-slate-700 dark:text-slate-300";
 
-function Stat({ label, value, sub, children }: { label: string; value: number | string; sub?: string; children?: React.ReactNode }) {
+const fmtDate = (d: string) =>
+  new Date(`${d}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", weekday: "short" });
+
+/** One card; with several dates the first is the big number and the rest are compared against it. */
+function Stat({
+  label,
+  rows,
+  sub,
+  children,
+}: {
+  label: string;
+  rows: { date: string; value: number; display?: string }[];
+  sub?: string;
+  children?: React.ReactNode;
+}) {
+  const [main, ...rest] = rows;
   return (
     <div className={box}>
       <div className="flex items-start justify-between gap-2">
         <p className="text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">{label}</p>
         {children}
       </div>
-      <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1 tabular-nums">{value}</p>
-      {sub && <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{sub}</p>}
+      <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1 tabular-nums">{main.display ?? main.value}</p>
+      <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">{fmtDate(main.date)}</p>
+      {rest.map((r) => {
+        const diff = Math.round((main.value - r.value) * 10) / 10;
+        return (
+          <div key={r.date} className="flex items-center justify-between text-[11px] mt-1 border-t border-slate-100 dark:border-white/[0.05] pt-1">
+            <span className="text-slate-500 dark:text-slate-400">{fmtDate(r.date)}</span>
+            <span className="tabular-nums text-slate-700 dark:text-slate-300">
+              {r.display ?? r.value}
+              {diff !== 0 && (
+                <span className={`ml-1.5 ${diff > 0 ? "text-emerald-600" : "text-rose-500"}`} title={`${fmtDate(main.date)} vs ${fmtDate(r.date)}`}>
+                  {diff > 0 ? "▲" : "▼"}
+                  {Math.abs(diff)}
+                </span>
+              )}
+            </span>
+          </div>
+        );
+      })}
+      {sub && <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{sub}</p>}
     </div>
   );
 }
+
+const shift = (d: string, days: number) => {
+  const x = new Date(`${d}T00:00:00Z`);
+  x.setUTCDate(x.getUTCDate() + days);
+  return x.toISOString().slice(0, 10);
+};
 
 const timeIST = (iso: string | null) =>
   iso ? new Date(iso).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit" }) : "—";
 
 export default function DailyUsersClient({ data }: { data: DailyUsersData }) {
   const router = useRouter();
-  const s = data.summary;
+  const pathname = usePathname();
+  const [loading, startTransition] = useTransition();
+  const sums = data.summaries;
+  const s = sums[0];
+  const isToday = data.dates.length === 1 && data.dates[0] === data.today;
+
+  const setDates = (next: string[]) => {
+    const uniq = [...new Set(next)].filter((d) => d && d <= data.today).slice(0, 7);
+    startTransition(() => router.push(uniq.length ? `${pathname}?dates=${uniq.join(",")}` : pathname));
+  };
+  const rowsOf = (pick: (x: Summary) => number, display?: (x: Summary) => string) =>
+    sums.map((x) => ({ date: x.date, value: pick(x), display: display?.(x) }));
   const [exclDays, setExclDays] = useState<"1" | "2" | "3">("1");
   const [todayNewOnly, setTodayNewOnly] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(() => new Set(data.dormant_users.slice(0, MAX_SEND).map((u) => u.id)));
@@ -136,17 +191,81 @@ export default function DailyUsersClient({ data }: { data: DailyUsersData }) {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-bold text-slate-900 dark:text-white">Daily Users</h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400">Today ({data.today}, IST). Counts exclude deactivated accounts.</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Dates are IST. Counts exclude deactivated accounts. Pick several dates to compare them; the first one is the main
+          number and the others show the change against it.
+        </p>
+      </div>
+
+      {/* Date filter */}
+      <div className={`${box} flex flex-wrap items-center gap-2 ${loading ? "opacity-60" : ""}`}>
+        <CalendarDays size={16} className="text-indigo-500" aria-hidden />
+        {data.dates.map((d, i) => (
+          <span
+            key={d}
+            className={`text-xs rounded-full px-2.5 py-1 flex items-center gap-1 ${
+              i === 0
+                ? "bg-indigo-600 text-white"
+                : "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300"
+            }`}
+          >
+            {fmtDate(d)}
+            {data.dates.length > 1 && (
+              <button
+                onClick={() => setDates(data.dates.filter((x) => x !== d))}
+                aria-label={`Remove ${d}`}
+                className="cursor-pointer opacity-80 hover:opacity-100"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </span>
+        ))}
+        <input
+          type="date"
+          max={data.today}
+          value=""
+          onChange={(e) => e.target.value && setDates([...data.dates, e.target.value])}
+          aria-label="Add a date to compare"
+          disabled={data.dates.length >= 7}
+          className="text-xs rounded-lg border border-slate-200 dark:border-white/10 bg-transparent px-2 py-1 text-slate-600 dark:text-slate-300"
+        />
+        <span className="text-[11px] text-slate-400">add date</span>
+        <div className="flex flex-wrap gap-1.5 ml-auto">
+          {[
+            ["Today", () => setDates([data.today])],
+            ["Yesterday", () => setDates([shift(data.today, -1)])],
+            ["+ day before", () => setDates([...data.dates, shift(data.dates[0], -1)])],
+            ["+ same day last week", () => setDates([...data.dates, shift(data.dates[0], -7)])],
+            ["Last 7 days", () => setDates([0, 1, 2, 3, 4, 5, 6].map((n) => shift(data.today, -n)))],
+          ].map(([label, fn]) => (
+            <button
+              key={label as string}
+              onClick={fn as () => void}
+              className="text-[11px] rounded-md border border-slate-200 dark:border-white/10 px-2 py-1 text-slate-600 dark:text-slate-300 hover:border-indigo-400 cursor-pointer"
+            >
+              {label as string}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Main cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Stat label="New users today" value={s.new_today} sub={`Yesterday ${s.new_yesterday} · last 7 days ${s.new_7d}`} />
-        <Stat label="Active users today" value={s.active_today} sub={`Yesterday ${s.active_yesterday} · ${s.active_today_with_push} reachable by push`} />
+        <Stat
+          label="New users"
+          rows={rowsOf((x) => x.new_today)}
+          sub={sums.length === 1 ? `Day before ${s.new_yesterday} · 7 days to this date ${s.new_7d}` : undefined}
+        />
+        <Stat
+          label="Active users"
+          rows={rowsOf((x) => x.active_today)}
+          sub={sums.length === 1 ? `Day before ${s.active_yesterday} · ${s.active_today_with_push} reachable by push` : undefined}
+        />
         <Stat
           label="Active, excl. new"
-          value={s.active_excl_new[exclDays]}
-          sub={exclDays === "1" ? "Excludes users who signed up today" : `Excludes users who signed up in the last ${exclDays} days`}
+          rows={rowsOf((x) => x.active_excl_new[exclDays])}
+          sub={exclDays === "1" ? "Excludes users who signed up that day" : `Excludes users who signed up in the ${exclDays} days up to that date`}
         >
           <select
             value={exclDays}
@@ -154,7 +273,7 @@ export default function DailyUsersClient({ data }: { data: DailyUsersData }) {
             aria-label="Exclude new users who signed up within"
             className="text-[11px] rounded-md border border-slate-200 dark:border-white/10 bg-transparent text-slate-600 dark:text-slate-300 px-1.5 py-0.5"
           >
-            <option value="1">Today</option>
+            <option value="1">Same day</option>
             <option value="2">2 days</option>
             <option value="3">3 days</option>
           </select>
@@ -163,20 +282,24 @@ export default function DailyUsersClient({ data }: { data: DailyUsersData }) {
 
       {/* Useful metrics */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Stat label="Weekly active (7d)" value={s.wau} />
-        <Stat label="Monthly active (30d)" value={s.mau} />
-        <Stat label="Stickiness (DAU / MAU)" value={`${s.stickiness_pct}%`} sub="Share of monthly users who came today" />
+        <Stat label="Weekly active (7d)" rows={rowsOf((x) => x.wau)} />
+        <Stat label="Monthly active (30d)" rows={rowsOf((x) => x.mau)} />
         <Stat
-          label="Yesterday's signups back today"
-          value={`${s.yesterday_new_returned_today} / ${s.new_yesterday}`}
-          sub="Day-1 return"
+          label="Stickiness (DAU / MAU)"
+          rows={rowsOf((x) => x.stickiness_pct, (x) => `${x.stickiness_pct}%`)}
+          sub="Share of the 30-day users who came that day"
+        />
+        <Stat
+          label="Day-1 return"
+          rows={rowsOf((x) => x.yesterday_new_returned_today, (x) => `${x.yesterday_new_returned_today} / ${x.new_yesterday}`)}
+          sub="Previous day's signups who came back"
         />
       </div>
 
       {/* Line chart */}
       <div className={`${box} h-80 flex flex-col`}>
         <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-3">
-          Active vs new users — last {data.trend.length} days
+          Active vs new users — {data.trend.length} days to {fmtDate(data.trend[data.trend.length - 1]?.date ?? data.today)}
         </h3>
         <div className="flex-1 min-h-0">
           <ResponsiveContainer width="100%" height="100%">
@@ -197,7 +320,8 @@ export default function DailyUsersClient({ data }: { data: DailyUsersData }) {
       <div className={box}>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-            Today&apos;s active users <span className="text-slate-400 font-normal">({todayRows.length})</span>
+            {isToday ? "Today's" : fmtDate(data.users_date)} active users{" "}
+            <span className="text-slate-400 font-normal">({todayRows.length})</span>
           </h3>
           <label className="text-xs text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
             <input type="checkbox" checked={todayNewOnly} onChange={(e) => setTodayNewOnly(e.target.checked)} />
@@ -210,7 +334,7 @@ export default function DailyUsersClient({ data }: { data: DailyUsersData }) {
               <tr>
                 <th className={th}>User</th>
                 <th className={th}>Signed up</th>
-                <th className={th}>Last seen</th>
+                <th className={th}>First seen</th>
                 <th className={th}>Active days</th>
                 <th className={th}>Push</th>
               </tr>
@@ -239,7 +363,7 @@ export default function DailyUsersClient({ data }: { data: DailyUsersData }) {
               ))}
               {todayRows.length === 0 && (
                 <tr>
-                  <td colSpan={5} className={`${td} text-center text-slate-400 py-6`}>No users yet today.</td>
+                  <td colSpan={5} className={`${td} text-center text-slate-400 py-6`}>No active users on this date.</td>
                 </tr>
               )}
             </tbody>
@@ -251,7 +375,7 @@ export default function DailyUsersClient({ data }: { data: DailyUsersData }) {
       <div className={box}>
         <div className="mb-3">
           <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-            Gone quiet <span className="text-slate-400 font-normal">({data.dormant_users.length})</span>
+            Gone quiet (as of today) <span className="text-slate-400 font-normal">({data.dormant_users.length})</span>
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Used the app on 7+ days but not opened it in the last 7 days. Top {MAX_SEND}, most engaged first. Pick up to {MAX_SEND}.
