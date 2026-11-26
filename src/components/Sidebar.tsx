@@ -20,6 +20,7 @@ import {
   CreditCard,
   Mail,
   Timer,
+  UserCheck,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { ThemeToggle } from "./ThemeProvider";
@@ -57,6 +58,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/campaigns", label: "Email Campaigns", icon: Mail },
       { href: "/buy-signals", label: "Recommended Signals", icon: CandlestickChart },
       { href: "/analytics", label: "Platform Analytics", icon: LineChart },
+      { href: "/daily-users", label: "Daily Users", icon: UserCheck },
       { href: "/activity", label: "Activity & Retention", icon: Activity },
     ],
   },
