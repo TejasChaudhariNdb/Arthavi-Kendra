@@ -27,30 +27,42 @@ interface TodayUser {
   has_push: boolean;
 }
 
-interface DormantUser {
+interface ListUser {
   id: number;
   email: string;
   name: string;
   signup_date: string | null;
   last_active_date: string | null;
   lifetime_active_days: number;
-  days_inactive: number;
+  days_inactive?: number;
   has_push: boolean;
+  last_contact_channel: "push" | "email" | null;
+  last_contact_at: string | null;
+}
+
+interface ContactRow {
+  id: number;
+  email: string;
+  name: string;
+  channel: "push" | "email";
+  sent_at: string | null;
+  returned_on: string | null;
 }
 
 interface Summary {
   date: string;
   new_today: number;
-    new_yesterday: number;
-    new_7d: number;
-    active_today: number;
-    active_excl_new: Record<"1" | "2" | "3", number>;
-    active_today_with_push: number;
-    active_yesterday: number;
-    wau: number;
-    mau: number;
-    stickiness_pct: number;
+  new_yesterday: number;
+  new_7d: number;
+  active_today: number;
+  active_excl_new: Record<"1" | "2" | "3", number>;
+  active_today_with_push: number;
+  active_yesterday: number;
+  wau: number;
+  mau: number;
+  stickiness_pct: number;
   yesterday_new_returned_today: number;
+  new_activated: number;
 }
 
 interface DailyUsersData {
@@ -60,7 +72,10 @@ interface DailyUsersData {
   users_date: string;
   trend: { date: string; active: number; new: number }[];
   today_users: TodayUser[];
-  dormant_users: DormantUser[];
+  dormant_users: ListUser[];
+  not_set_up_users: ListUser[];
+  contact_stats: Partial<Record<"push" | "email", { contacted: number; measurable: number; returned: number }>>;
+  contacts: ContactRow[];
 }
 
 const MAX_SEND = 50;
@@ -140,52 +155,7 @@ export default function DailyUsersClient({ data }: { data: DailyUsersData }) {
     sums.map((x) => ({ date: x.date, value: pick(x), display: display?.(x) }));
   const [exclDays, setExclDays] = useState<"1" | "2" | "3">("1");
   const [todayNewOnly, setTodayNewOnly] = useState(false);
-  const [selected, setSelected] = useState<Set<number>>(() => new Set(data.dormant_users.slice(0, MAX_SEND).map((u) => u.id)));
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [status, setStatus] = useState<{ ok: boolean; msg: string } | null>(null);
-  const [sending, setSending] = useState(false);
-
   const todayRows = todayNewOnly ? data.today_users.filter((u) => u.is_new) : data.today_users;
-  const picked = data.dormant_users.filter((u) => selected.has(u.id));
-  const pickedPush = picked.filter((u) => u.has_push);
-
-  const toggle = (id: number) =>
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else if (next.size < MAX_SEND) next.add(id);
-      return next;
-    });
-
-  const sendPush = async () => {
-    if (!title.trim() || !body.trim() || pickedPush.length === 0) return;
-    if (!confirm(`Send push to ${pickedPush.length} users?`)) return;
-    setSending(true);
-    setStatus(null);
-    try {
-      const res = await sendNotification({
-        title: title.trim(),
-        body: body.trim(),
-        send_to_all: false,
-        user_ids: pickedPush.map((u) => u.id),
-      });
-      setStatus({ ok: true, msg: res.message || "Push sent" });
-    } catch (e: unknown) {
-      setStatus({ ok: false, msg: e instanceof Error ? e.message : "Push failed" });
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const openMail = () => {
-    // Hand the emails to the campaigns composer without putting them in the URL.
-    sessionStorage.setItem(
-      "campaign_prefill",
-      JSON.stringify({ emails: picked.map((u) => u.email).join("\n"), campaign_type: "Retention / Re-engagement" }),
-    );
-    router.push("/campaigns");
-  };
 
   return (
     <div className="space-y-6">
@@ -281,7 +251,15 @@ export default function DailyUsersClient({ data }: { data: DailyUsersData }) {
       </div>
 
       {/* Useful metrics */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
+        <Stat
+          label="New users set up"
+          rows={rowsOf(
+            (x) => x.new_activated,
+            (x) => `${x.new_activated} / ${x.new_today}`,
+          )}
+          sub="New users who have added any investment (as of now)"
+        />
         <Stat label="Weekly active (7d)" rows={rowsOf((x) => x.wau)} />
         <Stat label="Monthly active (30d)" rows={rowsOf((x) => x.mau)} />
         <Stat
@@ -371,94 +349,289 @@ export default function DailyUsersClient({ data }: { data: DailyUsersData }) {
         </div>
       </div>
 
-      {/* Dormant users */}
-      <div className={box}>
-        <div className="mb-3">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-            Gone quiet (as of today) <span className="text-slate-400 font-normal">({data.dormant_users.length})</span>
-          </h3>
+      <ContactResults stats={data.contact_stats} contacts={data.contacts} />
+
+      <SendList
+        title="Gone quiet (as of today)"
+        description="Used the app on 7+ days but not opened it in the last 7 days. Most engaged first."
+        users={data.dormant_users}
+        mailType="Retention / Re-engagement"
+        cols={[
+          ["Active days", (u) => u.lifetime_active_days],
+          ["Last active", (u) => u.last_active_date ?? "—"],
+          ["Days away", (u) => u.days_inactive ?? "—"],
+        ]}
+      />
+
+      <SendList
+        title="Signed up, not set up yet"
+        description="Joined in the last 7 days and haven't added any investment yet. Newest first."
+        users={data.not_set_up_users}
+        mailType="Onboarding Follow-up"
+        cols={[
+          ["Signed up", (u) => u.signup_date ?? "—"],
+          ["Last active", (u) => u.last_active_date ?? "—"],
+          ["Active days", (u) => u.lifetime_active_days],
+        ]}
+      />
+    </div>
+  );
+}
+
+const HIDE_CONTACTED_DAYS = 7;
+const daysAgo = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+const recentlyContacted = (u: ListUser) => !!u.last_contact_at && daysAgo(u.last_contact_at) < HIDE_CONTACTED_DAYS;
+const PushIcon = ({ on }: { on: boolean }) =>
+  on ? <Bell size={14} className="text-indigo-500" aria-label="Has push" /> : <BellOff size={14} className="text-slate-400" aria-label="No push" />;
+
+function ContactResults({ stats, contacts }: { stats: DailyUsersData["contact_stats"]; contacts: ContactRow[] }) {
+  const [open, setOpen] = useState(false);
+  const channels = (["push", "email"] as const).filter((c) => stats[c]);
+  return (
+    <div className={box}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Did nudges work? (last 30 days)</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Used the app on 7+ days but not opened it in the last 7 days. Top {MAX_SEND}, most engaged first. Pick up to {MAX_SEND}.
+            Came back = opened the app on a later day than the push or email. Contacts from today aren&apos;t counted yet.
           </p>
         </div>
-
-        <div className="flex flex-col lg:flex-row gap-2 mb-3">
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Push title"
-            className="flex-1 text-xs rounded-lg border border-slate-200 dark:border-white/10 bg-transparent px-3 py-2"
-          />
-          <input
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            placeholder="Push message"
-            className="flex-[2] text-xs rounded-lg border border-slate-200 dark:border-white/10 bg-transparent px-3 py-2"
-          />
-          <button
-            onClick={sendPush}
-            disabled={sending || !title.trim() || !body.trim() || pickedPush.length === 0}
-            className="text-xs font-semibold rounded-lg bg-indigo-600 text-white px-3 py-2 disabled:opacity-40 flex items-center gap-1.5 cursor-pointer"
-          >
-            <Bell size={14} /> Push to {pickedPush.length}
-          </button>
-          <button
-            onClick={openMail}
-            disabled={picked.length === 0}
-            className="text-xs font-semibold rounded-lg border border-indigo-600 text-indigo-600 dark:text-indigo-400 px-3 py-2 disabled:opacity-40 flex items-center gap-1.5 cursor-pointer"
-          >
-            <Mail size={14} /> Email {picked.length}
-          </button>
+        <div className="flex gap-6">
+          {channels.length === 0 && <span className="text-xs text-slate-400">No pushes or emails logged yet.</span>}
+          {channels.map((c) => {
+            const st = stats[c]!;
+            const pct = st.measurable ? Math.round((st.returned * 100) / st.measurable) : 0;
+            return (
+              <div key={c}>
+                <p className="text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">{c}</p>
+                <p className="text-lg font-bold text-slate-900 dark:text-white tabular-nums">
+                  {pct}% <span className="text-xs font-normal text-slate-500">came back</span>
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  {st.returned} of {st.measurable} · {st.contacted} contacted
+                </p>
+              </div>
+            );
+          })}
         </div>
-        {status && <p className={`text-xs mb-3 ${status.ok ? "text-emerald-600" : "text-rose-500"}`}>{status.msg}</p>}
-
-        <div className="overflow-x-auto">
+      </div>
+      {contacts.length > 0 && (
+        <button onClick={() => setOpen(!open)} className="text-xs text-indigo-600 dark:text-indigo-400 mt-3 cursor-pointer">
+          {open ? "Hide" : "Show"} who was contacted ({contacts.length})
+        </button>
+      )}
+      {open && (
+        <div className="overflow-x-auto max-h-[360px] overflow-y-auto mt-2">
           <table className="w-full">
-            <thead>
+            <thead className="sticky top-0 bg-white dark:bg-[#0d121f]">
               <tr>
-                <th className={th}>
-                  <input
-                    type="checkbox"
-                    aria-label="Select all"
-                    checked={selected.size > 0 && selected.size === Math.min(MAX_SEND, data.dormant_users.length)}
-                    onChange={(e) =>
-                      setSelected(e.target.checked ? new Set(data.dormant_users.slice(0, MAX_SEND).map((u) => u.id)) : new Set())
-                    }
-                  />
-                </th>
                 <th className={th}>User</th>
-                <th className={th}>Active days</th>
-                <th className={th}>Last active</th>
-                <th className={th}>Days away</th>
-                <th className={th}>Push</th>
+                <th className={th}>Channel</th>
+                <th className={th}>Sent</th>
+                <th className={th}>Came back</th>
               </tr>
             </thead>
             <tbody>
-              {data.dormant_users.map((u) => (
-                <tr key={u.id} className="border-t border-slate-100 dark:border-white/[0.05]">
+              {contacts.map((c) => (
+                <tr key={`${c.id}-${c.channel}`} className="border-t border-slate-100 dark:border-white/[0.05]">
                   <td className={td}>
-                    <input type="checkbox" aria-label={`Select ${u.email}`} checked={selected.has(u.id)} onChange={() => toggle(u.id)} />
-                  </td>
-                  <td className={td}>
-                    <Link href={`/users/${u.id}`} className="hover:text-indigo-500">
-                      <span className="font-medium">{u.name}</span>
-                      <span className="block text-[11px] text-slate-500">{u.email}</span>
+                    <Link href={`/users/${c.id}`} className="hover:text-indigo-500">
+                      <span className="font-medium">{c.name}</span>
+                      <span className="block text-[11px] text-slate-500">{c.email}</span>
                     </Link>
                   </td>
-                  <td className={`${td} tabular-nums`}>{u.lifetime_active_days}</td>
-                  <td className={td}>{u.last_active_date ?? "—"}</td>
-                  <td className={`${td} tabular-nums`}>{u.days_inactive}</td>
-                  <td className={td}>{u.has_push ? <Bell size={14} className="text-indigo-500" aria-label="Has push" /> : <BellOff size={14} className="text-slate-400" aria-label="No push" />}</td>
+                  <td className={`${td} capitalize`}>{c.channel}</td>
+                  <td className={td}>{c.sent_at ? `${daysAgo(c.sent_at)}d ago` : "—"}</td>
+                  <td className={td}>
+                    {c.returned_on ? <span className="text-emerald-600">✓ {fmtDate(c.returned_on)}</span> : <span className="text-slate-400">Not yet</span>}
+                  </td>
                 </tr>
               ))}
-              {data.dormant_users.length === 0 && (
-                <tr>
-                  <td colSpan={6} className={`${td} text-center text-slate-400 py-6`}>Nobody has gone quiet.</td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
+      )}
+    </div>
+  );
+}
+
+/** A list you can push or mail (max 50 picked). Hides users contacted in the last 7 days by default. */
+function SendList({
+  title: heading,
+  description,
+  users,
+  mailType,
+  cols,
+}: {
+  title: string;
+  description: string;
+  users: ListUser[];
+  mailType: string;
+  cols: [string, (u: ListUser) => React.ReactNode][];
+}) {
+  const router = useRouter();
+  const [hideContacted, setHideContacted] = useState(true);
+  const hiddenCount = users.filter(recentlyContacted).length;
+  const shown = (hideContacted ? users.filter((u) => !recentlyContacted(u)) : users).slice(0, MAX_SEND);
+  const [selected, setSelected] = useState<Set<number>>(() => new Set(shown.map((u) => u.id)));
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [status, setStatus] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [sending, setSending] = useState(false);
+
+  const picked = shown.filter((u) => selected.has(u.id));
+  const pickedPush = picked.filter((u) => u.has_push);
+
+  const toggle = (id: number) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else if (next.size < MAX_SEND) next.add(id);
+      return next;
+    });
+
+  const sendPush = async () => {
+    if (!title.trim() || !body.trim() || pickedPush.length === 0) return;
+    if (!confirm(`Send push to ${pickedPush.length} users?`)) return;
+    setSending(true);
+    setStatus(null);
+    try {
+      const res = await sendNotification({
+        title: title.trim(),
+        body: body.trim(),
+        send_to_all: false,
+        user_ids: pickedPush.map((u) => u.id),
+      });
+      setStatus({ ok: true, msg: res.message || "Push sent" });
+      router.refresh(); // picks up the new contact log so these users drop off the list
+    } catch (e: unknown) {
+      setStatus({ ok: false, msg: e instanceof Error ? e.message : "Push failed" });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const openMail = () => {
+    // Hand the emails to the campaigns composer without putting them in the URL.
+    sessionStorage.setItem(
+      "campaign_prefill",
+      JSON.stringify({ emails: picked.map((u) => u.email).join("\n"), campaign_type: mailType }),
+    );
+    router.push("/campaigns");
+  };
+
+  return (
+    <div className={box}>
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+            {heading} <span className="text-slate-400 font-normal">({shown.length})</span>
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {description} Pick up to {MAX_SEND}. {pickedPush.length < picked.length && `${picked.length - pickedPush.length} picked can only get email.`}
+          </p>
+        </div>
+        <label className="text-xs text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+          <input type="checkbox" checked={hideContacted} onChange={(e) => setHideContacted(e.target.checked)} />
+          Hide contacted in last {HIDE_CONTACTED_DAYS} days ({hiddenCount})
+        </label>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-2 mb-3">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Push title"
+          aria-label="Push title"
+          className="flex-1 text-xs rounded-lg border border-slate-200 dark:border-white/10 bg-transparent px-3 py-2"
+        />
+        <input
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder="Push message"
+          aria-label="Push message"
+          className="flex-[2] text-xs rounded-lg border border-slate-200 dark:border-white/10 bg-transparent px-3 py-2"
+        />
+        <button
+          onClick={sendPush}
+          disabled={sending || !title.trim() || !body.trim() || pickedPush.length === 0}
+          className="text-xs font-semibold rounded-lg bg-indigo-600 text-white px-3 py-2 disabled:opacity-40 flex items-center gap-1.5 cursor-pointer"
+        >
+          <Bell size={14} /> Push to {pickedPush.length}
+        </button>
+        <button
+          onClick={openMail}
+          disabled={picked.length === 0}
+          className="text-xs font-semibold rounded-lg border border-indigo-600 text-indigo-600 dark:text-indigo-400 px-3 py-2 disabled:opacity-40 flex items-center gap-1.5 cursor-pointer"
+        >
+          <Mail size={14} /> Email {picked.length}
+        </button>
+      </div>
+      {status && <p className={`text-xs mb-3 ${status.ok ? "text-emerald-600" : "text-rose-500"}`}>{status.msg}</p>}
+
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr>
+              <th className={th}>
+                <input
+                  type="checkbox"
+                  aria-label="Select all"
+                  checked={shown.length > 0 && picked.length === shown.length}
+                  onChange={(e) => setSelected(e.target.checked ? new Set(shown.map((u) => u.id)) : new Set())}
+                />
+              </th>
+              <th className={th}>User</th>
+              {cols.map(([label]) => (
+                <th key={label} className={th}>
+                  {label}
+                </th>
+              ))}
+              <th className={th}>Last contacted</th>
+              <th className={th}>Push</th>
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map((u) => (
+              <tr key={u.id} className="border-t border-slate-100 dark:border-white/[0.05]">
+                <td className={td}>
+                  <input type="checkbox" aria-label={`Select ${u.email}`} checked={selected.has(u.id)} onChange={() => toggle(u.id)} />
+                </td>
+                <td className={td}>
+                  <Link href={`/users/${u.id}`} className="hover:text-indigo-500">
+                    <span className="font-medium">{u.name}</span>
+                    <span className="block text-[11px] text-slate-500">{u.email}</span>
+                  </Link>
+                </td>
+                {cols.map(([label, render]) => (
+                  <td key={label} className={`${td} tabular-nums`}>
+                    {render(u)}
+                  </td>
+                ))}
+                <td className={td}>
+                  {u.last_contact_at ? (
+                    <span className="text-[11px] text-amber-700 dark:text-amber-300">
+                      {u.last_contact_channel === "push" ? "Push" : "Email"}{" "}
+                      {daysAgo(u.last_contact_at) === 0 ? "today" : `${daysAgo(u.last_contact_at)}d ago`}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400">—</span>
+                  )}
+                </td>
+                <td className={td}>
+                  <PushIcon on={u.has_push} />
+                </td>
+              </tr>
+            ))}
+            {shown.length === 0 && (
+              <tr>
+                <td colSpan={cols.length + 4} className={`${td} text-center text-slate-400 py-6`}>
+                  Nobody here right now.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
