@@ -32,6 +32,7 @@ import {
   Clock,
   ShieldAlert,
   PiggyBank,
+  BriefcaseBusiness,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -111,6 +112,7 @@ export default function UserDetailClient({
     gold = [],
     real_estate = [],
     nps = [],
+    pms_aif = [],
     sips = [],
     cas_imports = [],
   } = data;
@@ -122,7 +124,7 @@ export default function UserDetailClient({
     "ALL" | "EQUITY" | "MUTUAL_FUND"
   >("ALL");
   const [vaultFilter, setVaultFilter] = useState<
-    "ALL" | "FIXED_INCOME" | "INSURANCE" | "GOLD" | "REAL_ESTATE" | "NPS" | "SIPS" | "CAS"
+    "ALL" | "FIXED_INCOME" | "INSURANCE" | "GOLD" | "REAL_ESTATE" | "NPS" | "PMS_AIF" | "SIPS" | "CAS"
   >("ALL");
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
 
@@ -198,11 +200,19 @@ export default function UserDetailClient({
     .filter((a: any) => (a.status || "").toUpperCase() !== "CLOSED")
     .reduce((acc: number, a: any) => acc + (a.value || 0), 0);
 
+  // BUG-117: PMS & AIF statement value of open holdings, same as the backend total
+  const altTotal = pms_aif
+    .filter((a: any) => (a.status || "").toUpperCase() !== "CLOSED")
+    .reduce((acc: number, a: any) => acc + (a.value || 0), 0);
+
   const totalVaultInvested =
     fixed_income.reduce((acc: number, h: any) => acc + (h.principal_amount || 0), 0) +
     gold.reduce((acc: number, g: any) => acc + (g.total_invested || 0), 0) +
     real_estate.reduce((acc: number, r: any) => acc + (r.purchase_price || 0), 0) +
     nps
+      .filter((a: any) => (a.status || "").toUpperCase() !== "CLOSED")
+      .reduce((acc: number, a: any) => acc + (a.invested || 0), 0) +
+    pms_aif
       .filter((a: any) => (a.status || "").toUpperCase() !== "CLOSED")
       .reduce((acc: number, a: any) => acc + (a.invested || 0), 0);
 
@@ -224,7 +234,7 @@ export default function UserDetailClient({
     .reduce((acc: number, s: any) => acc + (s.amount || 0), 0);
 
   const totalVaultItems =
-    fixed_income.length + insurance.length + gold.length + real_estate.length + nps.length + sips.length;
+    fixed_income.length + insurance.length + gold.length + real_estate.length + nps.length + pms_aif.length + sips.length;
 
   const allocationData = [
     { name: "Mutual Funds", value: mfValue },
@@ -233,6 +243,7 @@ export default function UserDetailClient({
   { name: "Gold", value: goldTotal },
   { name: "Real Estate", value: reTotal },
   { name: "NPS", value: npsTotal },
+  { name: "PMS & AIF", value: altTotal },
   ].filter((item) => item.value > 0);
 
   // Activity Processing
@@ -534,6 +545,19 @@ export default function UserDetailClient({
                 </p>
                 <p className="text-[10px] text-slate-400 mt-0.5">
                   {nps.length} accounts tracked
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#070a13] border border-slate-200/60 dark:border-white/[0.06]">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
+                  <span className="text-[10px] font-semibold uppercase text-slate-500 dark:text-slate-400">PMS &amp; AIF</span>
+                </div>
+                <p className="text-sm font-bold font-mono text-slate-900 dark:text-white">
+                  ₹{altTotal.toLocaleString("en-IN")}
+                </p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  {pms_aif.length} holdings tracked
                 </p>
               </div>
             </div>
@@ -1285,6 +1309,7 @@ export default function UserDetailClient({
                 { key: "GOLD", label: `Gold & Bullion (${gold.length})`, icon: Coins },
                 { key: "REAL_ESTATE", label: `Real Estate (${real_estate.length})`, icon: Home },
                 { key: "NPS", label: `NPS (${nps.length})`, icon: PiggyBank },
+                { key: "PMS_AIF", label: `PMS & AIF (${pms_aif.length})`, icon: BriefcaseBusiness },
                 { key: "SIPS", label: `SIPs (${sips.length})`, icon: CalendarClock },
                 { key: "CAS", label: `CAS & Ingestions (${cas_imports.length})`, icon: FileSpreadsheet },
               ].map((item) => (
@@ -1680,6 +1705,64 @@ export default function UserDetailClient({
               ) : (
                 <div className="text-center py-6 text-slate-400 dark:text-slate-500 text-xs">
                   No NPS accounts recorded.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 4c. PMS & AIF (BUG-117) */}
+          {(vaultFilter === "ALL" || vaultFilter === "PMS_AIF") && (
+            <div className="bg-white dark:bg-[#0d121f] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 border border-orange-200/60 dark:border-orange-800/50">
+                    <BriefcaseBusiness size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">PMS &amp; AIF</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Statement value entered by the user</p>
+                  </div>
+                </div>
+                <div className="text-right font-mono">
+                  <span className="text-xs text-slate-400">Total Value: </span>
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">₹{altTotal.toLocaleString("en-IN")}</span>
+                </div>
+              </div>
+
+              {pms_aif.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {pms_aif.map((a: any) => (
+                    <div
+                      key={a.id}
+                      className="p-4 rounded-xl bg-slate-50 dark:bg-[#070a13] border border-slate-200/80 dark:border-white/[0.06] space-y-2 text-xs">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-bold text-sm text-slate-900 dark:text-white">{a.manager}</h4>
+                          {a.strategy && <p className="text-slate-500 dark:text-slate-400">{a.strategy}</p>}
+                        </div>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-50 dark:bg-orange-950/50 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800">
+                          {a.kind}{a.status === "CLOSED" ? " · CLOSED" : ""}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 dark:text-slate-400">Value:</span>
+                        <span className="font-mono font-bold text-slate-900 dark:text-white">₹{Number(a.value || 0).toLocaleString("en-IN")}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 dark:text-slate-400">Net invested:</span>
+                        <span className="font-mono text-slate-700 dark:text-slate-300">₹{Number(a.invested || 0).toLocaleString("en-IN")}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 dark:text-slate-400">XIRR:</span>
+                        <span className="font-mono text-slate-700 dark:text-slate-300">{a.xirr !== null && a.xirr !== undefined ? `${a.xirr}%` : "--"}</span>
+                      </div>
+                      {a.value_date && <div className="text-[10px] text-slate-400">Value as of {a.value_date}</div>}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-slate-400 dark:text-slate-500 text-xs">
+                  No PMS or AIF holdings recorded.
                 </div>
               )}
             </div>

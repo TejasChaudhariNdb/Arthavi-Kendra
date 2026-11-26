@@ -80,6 +80,7 @@ export interface AdminStatsResponse {
     goldAum: number;
     realEstateAum: number;
     npsAum?: number; // BUG-092
+    pmsAifAum?: number; // BUG-117
   };
   vaultStats?: VaultStatsData;
 }
@@ -120,7 +121,8 @@ export default function MultiAssetVaultsSection({
       breakdown.fixedIncomeAum +
       breakdown.goldAum +
       breakdown.realEstateAum +
-      (breakdown.npsAum || 0);
+      (breakdown.npsAum || 0) +
+      (breakdown.pmsAifAum || 0);
 
   const mfPct = totalAum > 0 ? (breakdown.mfAum / totalAum) * 100 : 0;
   const eqPct = totalAum > 0 ? (breakdown.equityAum / totalAum) * 100 : 0;
@@ -128,6 +130,7 @@ export default function MultiAssetVaultsSection({
   const rePct = totalAum > 0 ? (breakdown.realEstateAum / totalAum) * 100 : 0;
   const goldPct = totalAum > 0 ? (breakdown.goldAum / totalAum) * 100 : 0;
   const npsPct = totalAum > 0 ? ((breakdown.npsAum || 0) / totalAum) * 100 : 0;
+  const altPct = totalAum > 0 ? ((breakdown.pmsAifAum || 0) / totalAum) * 100 : 0;
 
   const fi = vaults.fixedIncome || {
     count: 0,
@@ -238,10 +241,15 @@ export default function MultiAssetVaultsSection({
               className="bg-teal-500 transition-all duration-500"
               title={`NPS: ${formatInr(breakdown.npsAum)} (${npsPct.toFixed(1)}%)`}
             />
+            <div
+              style={{ width: `${Math.max(altPct, altPct > 0 ? 2 : 0)}%` }}
+              className="bg-orange-500 transition-all duration-500"
+              title={`PMS & AIF: ${formatInr(breakdown.pmsAifAum)} (${altPct.toFixed(1)}%)`}
+            />
           </div>
 
           {/* Asset Breakdown Chips */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 pt-2">
             <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-[#070a13] border border-slate-200/60 dark:border-white/[0.06]">
               <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 dark:bg-indigo-500 shrink-0" />
               <div className="min-w-0">
@@ -327,6 +335,21 @@ export default function MultiAssetVaultsSection({
                   {formatInr(breakdown.npsAum)}{" "}
                   <span className="text-[10px] text-slate-400 font-normal">
                     ({npsPct.toFixed(0)}%)
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-[#070a13] border border-slate-200/60 dark:border-white/[0.06]">
+              <span className="w-2.5 h-2.5 rounded-full bg-orange-500 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase truncate">
+                  PMS &amp; AIF
+                </p>
+                <p className="text-xs font-bold font-mono text-slate-900 dark:text-white truncate">
+                  {formatInr(breakdown.pmsAifAum)}{" "}
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    ({altPct.toFixed(0)}%)
                   </span>
                 </p>
               </div>
