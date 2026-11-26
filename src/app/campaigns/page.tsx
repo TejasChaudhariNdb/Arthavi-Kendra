@@ -181,6 +181,20 @@ export default function EmailCampaignsPage() {
   // ==========================================
   // LIFECYCLES
   // ==========================================
+  // Prefill from Daily Users "Email N" (passed via sessionStorage, not the URL).
+  useEffect(() => {
+    const raw = sessionStorage.getItem("campaign_prefill");
+    if (!raw) return;
+    sessionStorage.removeItem("campaign_prefill");
+    try {
+      const p = JSON.parse(raw);
+      setRecipientMode("manual");
+      setManualEmails(p.emails || "");
+      if (p.campaign_type) setCampaignType(p.campaign_type);
+      setActiveTab("compose");
+    } catch {}
+  }, []);
+
   useEffect(() => {
     if (activeTab === "campaigns") {
       loadCampaigns();

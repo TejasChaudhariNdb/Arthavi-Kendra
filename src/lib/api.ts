@@ -478,3 +478,13 @@ export async function fetchCronRun(id: number): Promise<CronRunRow | null> {
   if (!res.ok) throw new Error(`Failed to fetch cron run (${res.status})`);
   return res.json();
 }
+
+export async function fetchDailyUsers() {
+  const headers = await getHeaders();
+  const res = await fetch(`${API_URL}/admin/metrics/daily-users`, {
+    cache: "no-store",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to fetch daily users");
+  return res.json();
+}
