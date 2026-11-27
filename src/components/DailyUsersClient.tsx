@@ -84,8 +84,55 @@ const box =
 const th = "text-left text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold py-2 px-2";
 const td = "py-2 px-2 text-xs text-slate-700 dark:text-slate-300";
 
-const fmtDate = (d: string) =>
-  new Date(`${d}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", weekday: "short" });
+/** Parse an API timestamp; trims microseconds and a doubled zone (old iOS Safari shows these as "Invalid Date"). */
+const toDate = (iso: string | null | undefined) => {
+  if (!iso) return null;
+  const d = new Date(iso.replace(/(\.\d{3})\d+/, "$1").replace(/[+-]00:00Z$/, "Z"));
+  return isNaN(d.getTime()) ? null : d;
+};
+
+// Built from parts, so no string parsing differences between browsers.
+const fmtDate = (d: string) => {
+  const [y, m, day] = d.split("-").map(Number);
+  const x = new Date(y, m - 1, day);
+  return isNaN(x.getTime()) ? d : x.toLocaleDateString("en-IN", { day: "numeric", month: "short", weekday: "short" });
+};
+
+type SortVal = string | number | boolean | null | undefined;
+type SortState = { key: string; dir: 1 | -1 } | null;
+
+/** Click a header: ascending, then descending, then back to the default order. Empty values always last. */
+function useSorted<T>(rows: T[], get: Record<string, (r: T) => SortVal>) {
+  const [sort, setSort] = useState<SortState>(null);
+  const sorted = !sort
+    ? rows
+    : [...rows].sort((a, b) => {
+        const x = get[sort.key](a);
+        const y = get[sort.key](b);
+        if (x == null || x === "" || y == null || y === "") return x == null || x === "" ? (y == null || y === "" ? 0 : 1) : -1;
+        const c = typeof x === "string" && typeof y === "string" ? x.localeCompare(y) : Number(x) - Number(y);
+        return c * sort.dir;
+      });
+  const onSort = (key: string) =>
+    setSort((cur) => (cur?.key !== key ? { key, dir: 1 } : cur.dir === 1 ? { key, dir: -1 } : null));
+  return { sorted, sort, onSort };
+}
+
+function SortTh({ label, k, sort, onSort }: { label: string; k: string; sort: SortState; onSort: (k: string) => void }) {
+  const active = sort?.key === k;
+  return (
+    <th className={th} aria-sort={active ? (sort!.dir === 1 ? "ascending" : "descending") : "none"}>
+      <button
+        type="button"
+        onClick={() => onSort(k)}
+        className={`inline-flex items-center gap-1 uppercase tracking-wider cursor-pointer hover:text-indigo-500 ${active ? "text-indigo-600 dark:text-indigo-400" : ""}`}
+      >
+        {label}
+        <span aria-hidden className="text-[9px]">{active ? (sort!.dir === 1 ? "▲" : "▼") : "↕"}</span>
+      </button>
+    </th>
+  );
+}
 
 /** One card; with several dates the first is the big number and the rest are compared against it. */
 function Stat({
@@ -137,7 +184,7 @@ const shift = (d: string, days: number) => {
 };
 
 const timeIST = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit" }) : "—";
+  toDate(iso)?.toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit" }) ?? "—";
 
 export default function DailyUsersClient({ data }: { data: DailyUsersData }) {
   const router = useRouter();
@@ -156,6 +203,13 @@ export default function DailyUsersClient({ data }: { data: DailyUsersData }) {
   const [exclDays, setExclDays] = useState<"1" | "2" | "3">("1");
   const [todayNewOnly, setTodayNewOnly] = useState(false);
   const todayRows = todayNewOnly ? data.today_users.filter((u) => u.is_new) : data.today_users;
+  const today = useSorted(todayRows, {
+    name: (u) => u.name.toLowerCase(),
+    signup: (u) => u.signup_date,
+    seen: (u) => u.last_active_at,
+    days: (u) => u.lifetime_active_days,
+    push: (u) => u.has_push,
+  });
 
   return (
     <div className="space-y-6">
@@ -310,15 +364,15 @@ export default function DailyUsersClient({ data }: { data: DailyUsersData }) {
           <table className="w-full">
             <thead className="sticky top-0 bg-white dark:bg-[#0d121f]">
               <tr>
-                <th className={th}>User</th>
-                <th className={th}>Signed up</th>
-                <th className={th}>First seen</th>
-                <th className={th}>Active days</th>
-                <th className={th}>Push</th>
+                <SortTh label="User" k="name" {...today} />
+                <SortTh label="Signed up" k="signup" {...today} />
+                <SortTh label="First seen" k="seen" {...today} />
+                <SortTh label="Active days" k="days" {...today} />
+                <SortTh label="Push" k="push" {...today} />
               </tr>
             </thead>
             <tbody>
-              {todayRows.map((u) => (
+              {today.sorted.map((u) => (
                 <tr key={u.id} className="border-t border-slate-100 dark:border-white/[0.05]">
                   <td className={td}>
                     <Link href={`/users/${u.id}`} className="hover:text-indigo-500">
@@ -358,8 +412,8 @@ export default function DailyUsersClient({ data }: { data: DailyUsersData }) {
         mailType="Retention / Re-engagement"
         cols={[
           ["Active days", (u) => u.lifetime_active_days],
-          ["Last active", (u) => u.last_active_date ?? "—"],
-          ["Days away", (u) => u.days_inactive ?? "—"],
+          ["Last active", (u) => u.last_active_date],
+          ["Days away", (u) => u.days_inactive],
         ]}
       />
 
@@ -369,8 +423,8 @@ export default function DailyUsersClient({ data }: { data: DailyUsersData }) {
         users={data.not_set_up_users}
         mailType="Onboarding Follow-up"
         cols={[
-          ["Signed up", (u) => u.signup_date ?? "—"],
-          ["Last active", (u) => u.last_active_date ?? "—"],
+          ["Signed up", (u) => u.signup_date],
+          ["Last active", (u) => u.last_active_date],
           ["Active days", (u) => u.lifetime_active_days],
         ]}
       />
@@ -379,13 +433,26 @@ export default function DailyUsersClient({ data }: { data: DailyUsersData }) {
 }
 
 const HIDE_CONTACTED_DAYS = 7;
-const daysAgo = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-const recentlyContacted = (u: ListUser) => !!u.last_contact_at && daysAgo(u.last_contact_at) < HIDE_CONTACTED_DAYS;
+const daysAgo = (iso: string | null) => {
+  const d = toDate(iso);
+  return d ? Math.max(0, Math.floor((Date.now() - d.getTime()) / 86_400_000)) : null;
+};
+const agoText = (iso: string | null) => {
+  const n = daysAgo(iso);
+  return n == null ? "—" : n === 0 ? "today" : `${n}d ago`;
+};
+const recentlyContacted = (u: ListUser) => (daysAgo(u.last_contact_at) ?? Infinity) < HIDE_CONTACTED_DAYS;
 const PushIcon = ({ on }: { on: boolean }) =>
   on ? <Bell size={14} className="text-indigo-500" aria-label="Has push" /> : <BellOff size={14} className="text-slate-400" aria-label="No push" />;
 
 function ContactResults({ stats, contacts }: { stats: DailyUsersData["contact_stats"]; contacts: ContactRow[] }) {
   const [open, setOpen] = useState(false);
+  const list = useSorted(contacts, {
+    name: (c) => c.name.toLowerCase(),
+    channel: (c) => c.channel,
+    sent: (c) => c.sent_at,
+    back: (c) => c.returned_on,
+  });
   const channels = (["push", "email"] as const).filter((c) => stats[c]);
   return (
     <div className={box}>
@@ -425,14 +492,14 @@ function ContactResults({ stats, contacts }: { stats: DailyUsersData["contact_st
           <table className="w-full">
             <thead className="sticky top-0 bg-white dark:bg-[#0d121f]">
               <tr>
-                <th className={th}>User</th>
-                <th className={th}>Channel</th>
-                <th className={th}>Sent</th>
-                <th className={th}>Came back</th>
+                <SortTh label="User" k="name" {...list} />
+                <SortTh label="Channel" k="channel" {...list} />
+                <SortTh label="Sent" k="sent" {...list} />
+                <SortTh label="Came back" k="back" {...list} />
               </tr>
             </thead>
             <tbody>
-              {contacts.map((c) => (
+              {list.sorted.map((c) => (
                 <tr key={`${c.id}-${c.channel}`} className="border-t border-slate-100 dark:border-white/[0.05]">
                   <td className={td}>
                     <Link href={`/users/${c.id}`} className="hover:text-indigo-500">
@@ -441,7 +508,7 @@ function ContactResults({ stats, contacts }: { stats: DailyUsersData["contact_st
                     </Link>
                   </td>
                   <td className={`${td} capitalize`}>{c.channel}</td>
-                  <td className={td}>{c.sent_at ? `${daysAgo(c.sent_at)}d ago` : "—"}</td>
+                  <td className={td}>{agoText(c.sent_at)}</td>
                   <td className={td}>
                     {c.returned_on ? <span className="text-emerald-600">✓ {fmtDate(c.returned_on)}</span> : <span className="text-slate-400">Not yet</span>}
                   </td>
@@ -467,7 +534,7 @@ function SendList({
   description: string;
   users: ListUser[];
   mailType: string;
-  cols: [string, (u: ListUser) => React.ReactNode][];
+  cols: [string, (u: ListUser) => string | number | null | undefined][];
 }) {
   const router = useRouter();
   const [hideContacted, setHideContacted] = useState(true);
@@ -479,6 +546,12 @@ function SendList({
   const [status, setStatus] = useState<{ ok: boolean; msg: string } | null>(null);
   const [sending, setSending] = useState(false);
 
+  const table = useSorted(shown, {
+    name: (u) => u.name.toLowerCase(),
+    ...Object.fromEntries(cols.map(([label, get]) => [label, get])),
+    contacted: (u) => u.last_contact_at,
+    push: (u) => u.has_push,
+  });
   const picked = shown.filter((u) => selected.has(u.id));
   const pickedPush = picked.filter((u) => u.has_push);
 
@@ -581,18 +654,16 @@ function SendList({
                   onChange={(e) => setSelected(e.target.checked ? new Set(shown.map((u) => u.id)) : new Set())}
                 />
               </th>
-              <th className={th}>User</th>
+              <SortTh label="User" k="name" {...table} />
               {cols.map(([label]) => (
-                <th key={label} className={th}>
-                  {label}
-                </th>
+                <SortTh key={label} label={label} k={label} {...table} />
               ))}
-              <th className={th}>Last contacted</th>
-              <th className={th}>Push</th>
+              <SortTh label="Last contacted" k="contacted" {...table} />
+              <SortTh label="Push" k="push" {...table} />
             </tr>
           </thead>
           <tbody>
-            {shown.map((u) => (
+            {table.sorted.map((u) => (
               <tr key={u.id} className="border-t border-slate-100 dark:border-white/[0.05]">
                 <td className={td}>
                   <input type="checkbox" aria-label={`Select ${u.email}`} checked={selected.has(u.id)} onChange={() => toggle(u.id)} />
@@ -605,14 +676,13 @@ function SendList({
                 </td>
                 {cols.map(([label, render]) => (
                   <td key={label} className={`${td} tabular-nums`}>
-                    {render(u)}
+                    {render(u) ?? "—"}
                   </td>
                 ))}
                 <td className={td}>
                   {u.last_contact_at ? (
                     <span className="text-[11px] text-amber-700 dark:text-amber-300">
-                      {u.last_contact_channel === "push" ? "Push" : "Email"}{" "}
-                      {daysAgo(u.last_contact_at) === 0 ? "today" : `${daysAgo(u.last_contact_at)}d ago`}
+                      {u.last_contact_channel === "push" ? "Push" : "Email"} {agoText(u.last_contact_at)}
                     </span>
                   ) : (
                     <span className="text-slate-400">—</span>
