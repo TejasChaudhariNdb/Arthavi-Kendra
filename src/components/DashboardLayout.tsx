@@ -19,7 +19,8 @@ import Sidebar from "./Sidebar";
 import { ThemeToggle } from "./ThemeProvider";
 
 function getPageTitle(pathname: string): { title: string; section: string } {
-  if (pathname === "/") return { title: "Dashboard Overview", section: "Overview" };
+  if (pathname === "/") return { title: "Home", section: "Overview" };
+  if (pathname.startsWith("/overview")) return { title: "Dashboard Overview", section: "Overview" };
   if (pathname.startsWith("/users/")) return { title: "User Details & Portfolios", section: "Core Operations" };
   if (pathname.startsWith("/users")) return { title: "Users Directory", section: "Core Operations" };
   if (pathname.startsWith("/master-data")) return { title: "Master Market Data", section: "Core Operations" };
