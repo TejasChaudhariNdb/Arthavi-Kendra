@@ -260,11 +260,14 @@ function FeedbackCard({ item, updating, onUpdate, onAddComment }: FeedbackCardPr
       ageCls = "text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-900/30";
     } else {
       const days = Math.floor(ageHours / 24);
-      ageLabel = `${days}d old`;
+      ageLabel = `${days} ${days === 1 ? "day" : "days"} old`;
+      // 1-3 days green, 4-7 amber, over 7 red
       ageCls =
         days <= 3
-          ? "text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-900/30"
-          : "text-rose-700 bg-rose-50 dark:text-rose-300 dark:bg-rose-900/30";
+          ? "text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-900/30"
+          : days <= 7
+            ? "text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-900/30"
+            : "text-rose-700 bg-rose-50 dark:text-rose-300 dark:bg-rose-900/30";
     }
   }
 
