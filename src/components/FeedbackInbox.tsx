@@ -144,22 +144,18 @@ interface FeedbackCardProps {
   item: FeedbackItem;
   updating: boolean;
   onUpdate: (id: number, status: string, action_taken: string) => Promise<void>;
-  onAddComment: (id: number, commentText: string) => Promise<void>;
+  onAddComment: (id: number, commentText: string) => Promise<string | null>;
 }
 
 function FeedbackCard({ item, updating, onUpdate, onAddComment }: FeedbackCardProps) {
   const [status, setStatus] = useState(normalizeFeedbackStatus(item.status));
-  const [actionTaken, setActionTaken] = useState(item.action_taken || "");
-  const [isSaved, setIsSaved] = useState(true);
   const [adminCommentText, setAdminCommentText] = useState("");
   const [postingComment, setPostingComment] = useState(false);
-  const [showComments, setShowComments] = useState(false);
+  const [sentNote, setSentNote] = useState("");
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useEffect(() => {
     setStatus(normalizeFeedbackStatus(item.status));
-    setActionTaken(item.action_taken || "");
-    setIsSaved(true);
   }, [item]);
 
   const typeCfg = TYPE_CONFIG[item.type] || TYPE_CONFIG.feedback;
@@ -184,17 +180,13 @@ function FeedbackCard({ item, updating, onUpdate, onAddComment }: FeedbackCardPr
     }
   }
 
-  const handleSave = async () => {
-    await onUpdate(item.id, status, actionTaken);
-    setIsSaved(true);
-  };
-
   const handleCommentSubmit = async () => {
     if (!adminCommentText.trim()) return;
     setPostingComment(true);
     try {
-      await onAddComment(item.id, adminCommentText.trim());
+      const emailedTo = await onAddComment(item.id, adminCommentText.trim());
       setAdminCommentText("");
+      setSentNote(emailedTo ? `Sent · emailed ${emailedTo}` : "Sent (no email on file)");
     } finally {
       setPostingComment(false);
     }
@@ -366,112 +358,84 @@ function FeedbackCard({ item, updating, onUpdate, onAddComment }: FeedbackCardPr
           </div>
         </div>
 
-        {/* Action Taken Response Section */}
-        <div className="border-t border-slate-200/80 dark:border-white/[0.08] pt-4 mt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="flex-1">
-            <input
-              type="text"
-              placeholder="Official Response / Release Note (Optional)..."
-              value={actionTaken}
-              onChange={(e) => {
-                setActionTaken(e.target.value);
-                setIsSaved(false);
-              }}
-              className="w-full bg-slate-50 dark:bg-[#070a13] border border-slate-200 dark:border-white/[0.08] focus:border-indigo-500 rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none transition-colors"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <select
-              value={status}
-              onChange={(e) => {
-                setStatus(e.target.value as FeedbackStatus);
-                setIsSaved(false);
-              }}
-              className="bg-slate-50 dark:bg-[#070a13] border border-slate-200 dark:border-white/[0.08] rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
-            >
-              {FEEDBACK_STATUSES.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.emoji} {s.label}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={handleSave}
-              disabled={updating || isSaved}
-              className={`text-xs px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
-                isSaved
-                  ? "bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-white/[0.06]"
-                  : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm active:scale-95"
-              }`}
-            >
-              {updating ? "Saving..." : "Save"}
-            </button>
-          </div>
-        </div>
-
-        {/* Community Comments Thread Toggle */}
-        <div className="border-t border-slate-200/60 dark:border-white/[0.04] pt-3 flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setShowComments(!showComments)}
-              className="text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white flex items-center gap-1.5 font-semibold transition cursor-pointer"
-            >
-              <MessageSquare className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span>Community Comments ({item.comments?.length || 0})</span>
-            </button>
-          </div>
-
-          {showComments && (
-            <div className="mt-2 bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.06] rounded-2xl p-3.5 space-y-3">
-              {item.comments && item.comments.length > 0 ? (
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  {item.comments.map((c) => (
-                    <div
-                      key={c.id}
-                      className={`p-3 rounded-xl text-xs border ${
-                        c.is_admin
-                          ? "bg-indigo-50/50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800/60"
-                          : "bg-white dark:bg-[#0d121f] border-slate-200/80 dark:border-white/[0.06]"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className={`font-bold flex items-center gap-1 ${c.is_admin ? "text-indigo-600 dark:text-indigo-400" : "text-slate-800 dark:text-slate-200"}`}>
-                          {c.is_admin && <ShieldCheck className="w-3.5 h-3.5" />}
-                          {c.author_name}
-                        </span>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">{c.created_at}</span>
-                      </div>
-                      <p className="text-slate-700 dark:text-slate-300 leading-relaxed break-words whitespace-pre-wrap">{c.comment}</p>
-                    </div>
-                  ))}
+        {/* Conversation: admin replies + community comments, plus the legacy official response */}
+        <div className="border-t border-slate-200/80 dark:border-white/[0.08] pt-4 mt-1 flex flex-col gap-3">
+          {(item.action_taken || (item.comments && item.comments.length > 0)) && (
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+              {item.action_taken && (
+                <div className="p-3 rounded-xl text-xs border bg-indigo-50/50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800/60">
+                  <span className="font-bold flex items-center gap-1 mb-1 text-indigo-600 dark:text-indigo-400">
+                    <ShieldCheck className="w-3.5 h-3.5" /> Official response
+                  </span>
+                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed break-words whitespace-pre-wrap">{item.action_taken}</p>
                 </div>
-              ) : (
-                <p className="text-xs text-slate-500 dark:text-slate-400 italic">No community comments yet.</p>
               )}
-
-              {/* Admin Comment Form */}
-              <div className="flex gap-2 pt-1">
-                <input
-                  type="text"
-                  placeholder="Reply as Admin..."
-                  value={adminCommentText}
-                  onChange={(e) => setAdminCommentText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleCommentSubmit();
-                  }}
-                  className="flex-1 bg-white dark:bg-[#070a13] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
-                />
-                <button
-                  onClick={handleCommentSubmit}
-                  disabled={postingComment || !adminCommentText.trim()}
-                  className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs px-3.5 py-1.5 rounded-xl font-bold flex items-center gap-1 transition cursor-pointer"
+              {item.comments?.map((c) => (
+                <div
+                  key={c.id}
+                  className={`p-3 rounded-xl text-xs border ${
+                    c.is_admin
+                      ? "bg-indigo-50/50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800/60 ml-6"
+                      : "bg-white dark:bg-[#0d121f] border-slate-200/80 dark:border-white/[0.06] mr-6"
+                  }`}
                 >
-                  <Send className="w-3 h-3" />
-                  <span>Reply</span>
-                </button>
-              </div>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <span className={`font-bold flex items-center gap-1 ${c.is_admin ? "text-indigo-600 dark:text-indigo-400" : "text-slate-800 dark:text-slate-200"}`}>
+                      {c.is_admin ? <ShieldCheck className="w-3.5 h-3.5" /> : <MessageSquare className="w-3.5 h-3.5" />}
+                      {c.author_name}
+                    </span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">{c.created_at}</span>
+                  </div>
+                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed break-words whitespace-pre-wrap">{c.comment}</p>
+                </div>
+              ))}
             </div>
           )}
+
+          {/* Single reply box: saves the reply on the post and emails the user */}
+          <textarea
+            rows={2}
+            placeholder={item.user?.email ? `Reply to ${item.user.full_name || item.user.email}… (also emailed to them)` : "Reply…"}
+            value={adminCommentText}
+            onChange={(e) => setAdminCommentText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleCommentSubmit();
+            }}
+            className="w-full resize-y bg-slate-50 dark:bg-[#070a13] border border-slate-200 dark:border-white/[0.08] focus:border-indigo-500 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none transition-colors"
+          />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <label className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Status</label>
+              <select
+                value={status}
+                disabled={updating}
+                onChange={(e) => {
+                  const next = e.target.value as FeedbackStatus;
+                  setStatus(next);
+                  onUpdate(item.id, next, item.action_taken || "");
+                }}
+                className="bg-slate-50 dark:bg-[#070a13] border border-slate-200 dark:border-white/[0.08] rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
+              >
+                {FEEDBACK_STATUSES.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.emoji} {s.label}
+                  </option>
+                ))}
+              </select>
+              {updating && <span className="text-[11px] text-slate-400">Saving…</span>}
+            </div>
+            <div className="flex items-center gap-2">
+              {sentNote && <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">{sentNote}</span>}
+              <button
+                onClick={handleCommentSubmit}
+                disabled={postingComment || !adminCommentText.trim()}
+                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs px-4 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <Send className="w-3 h-3" />
+                <span>{postingComment ? "Sending…" : "Send reply"}</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </Card>
@@ -635,20 +599,19 @@ export default function FeedbackInbox() {
         },
         body: JSON.stringify({ comment: commentText }),
       });
-      if (res.ok) {
-        const newComment = await res.json();
-        setItems((prev) =>
-          prev.map((f) => {
-            if (f.id === id) {
-              const updatedComments = [...(f.comments || []), newComment];
-              return { ...f, comments: updatedComments, comments_count: updatedComments.length };
-            }
-            return f;
-          })
-        );
-      }
+      if (!res.ok) throw new Error(`Reply failed (${res.status})`);
+      const newComment = await res.json();
+      setItems((prev) =>
+        prev.map((f) => {
+          if (f.id !== id) return f;
+          const updatedComments = [...(f.comments || []), newComment];
+          return { ...f, comments: updatedComments, comments_count: updatedComments.length };
+        })
+      );
+      return (newComment.emailed_to as string | null) ?? null;
     } catch (e) {
-      console.error(e);
+      alert(e instanceof Error ? e.message : "Reply failed");
+      throw e;
     }
   };
 
