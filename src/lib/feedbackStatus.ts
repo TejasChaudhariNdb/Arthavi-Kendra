@@ -8,36 +8,41 @@ export interface StatusMeta {
   label: string;
   emoji: string;
   badgeColor: string;
+  dot: string;
   icon: React.ElementType;
 }
 
 export const FEEDBACK_STATUSES: StatusMeta[] = [
   {
     id: "under_review",
+    dot: "bg-amber-500",
     label: "Under Review",
     emoji: "🟡",
-    badgeColor: "text-amber-400 bg-amber-900/30 border-amber-800",
+    badgeColor: "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-300 dark:bg-amber-900/30 dark:border-amber-800",
     icon: Clock,
   },
   {
     id: "in_progress",
+    dot: "bg-blue-500",
     label: "In Progress",
     emoji: "🔵",
-    badgeColor: "text-blue-400 bg-blue-900/30 border-blue-800",
+    badgeColor: "text-blue-700 bg-blue-50 border-blue-200 dark:text-blue-300 dark:bg-blue-900/30 dark:border-blue-800",
     icon: Clock,
   },
   {
     id: "live",
+    dot: "bg-emerald-500",
     label: "Live / Done",
     emoji: "🟢",
-    badgeColor: "text-emerald-400 bg-emerald-900/30 border-emerald-800",
+    badgeColor: "text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-900/30 dark:border-emerald-800",
     icon: CheckCircle,
   },
   {
     id: "on_hold",
+    dot: "bg-slate-400",
     label: "On Hold",
     emoji: "⏸️",
-    badgeColor: "text-zinc-400 bg-zinc-900/40 border-zinc-800",
+    badgeColor: "text-slate-600 bg-slate-100 border-slate-200 dark:text-zinc-300 dark:bg-zinc-900/40 dark:border-zinc-700",
     icon: PauseCircle,
   },
 ];

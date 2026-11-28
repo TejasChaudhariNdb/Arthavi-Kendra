@@ -7,7 +7,6 @@ import {
   MessageCircle,
   Clock,
   RefreshCw,
-  ExternalLink,
   Heart,
   AlertTriangle,
   Sparkles,
@@ -15,12 +14,12 @@ import {
   MessageSquare,
   ThumbsUp,
   ShieldCheck,
-  Paperclip,
   FileText,
   Image as ImageIcon,
   Download,
   Maximize2,
   X,
+  CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -30,7 +29,6 @@ import {
   FeedbackStatus,
 } from "@/lib/feedbackStatus";
 import { Card } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 // BUG-019: same-origin proxy adds the HttpOnly admin token on the server.
@@ -147,12 +145,97 @@ interface FeedbackCardProps {
   onAddComment: (id: number, commentText: string) => Promise<string | null>;
 }
 
+function initials(name?: string | null) {
+  const parts = (name || "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+}
+
+function AttachmentPreview({ item }: { item: FeedbackItem }) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  if (!item.attachment_url) return null;
+  const url = getAttachmentFullUrl(item.attachment_url);
+
+  if (!isImageFile(item.attachment_name, item.attachment_type)) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        download={item.attachment_name || true}
+        className="inline-flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 hover:border-indigo-400 dark:hover:border-indigo-500/40 text-xs transition group"
+      >
+        <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+        <span className="truncate max-w-[220px] font-semibold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+          {item.attachment_name || "Attached document"}
+        </span>
+        {item.attachment_size ? <span className="text-slate-400">{formatBytes(item.attachment_size)}</span> : null}
+        <Download className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-500" />
+      </a>
+    );
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setLightboxOpen(true)}
+        className="group relative block overflow-hidden rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-[#070a13] max-w-xs cursor-zoom-in"
+        aria-label="Enlarge attachment"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element -- signed backend URL, not optimizable */}
+        <img src={url} alt={item.attachment_name || "Attachment"} className="max-h-36 w-full object-cover" loading="lazy" />
+        <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-semibold">
+          <Maximize2 className="w-3.5 h-3.5" /> Enlarge
+        </span>
+      </button>
+      <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+        <ImageIcon className="w-3 h-3 text-indigo-500" />
+        <span className="truncate max-w-[200px]">{item.attachment_name || "Image"}</span>
+        {item.attachment_size ? <span>· {formatBytes(item.attachment_size)}</span> : null}
+      </div>
+
+      {lightboxOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+            <div className="w-full flex items-center justify-between pb-3 text-white px-1">
+              <span className="text-sm font-bold truncate max-w-[70vw]">{item.attachment_name || item.title}</span>
+              <div className="flex items-center gap-3">
+                <a
+                  href={url}
+                  download={item.attachment_name || "attachment"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition flex items-center gap-1 text-xs"
+                >
+                  <Download className="w-3.5 h-3.5" /> Download
+                </a>
+                <button
+                  onClick={() => setLightboxOpen(false)}
+                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition cursor-pointer"
+                  aria-label="Close"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element -- signed backend URL, not optimizable */}
+            <img src={url} alt={item.title} className="max-h-[80vh] max-w-full rounded-2xl object-contain shadow-2xl border border-white/10" />
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 function FeedbackCard({ item, updating, onUpdate, onAddComment }: FeedbackCardProps) {
   const [status, setStatus] = useState(normalizeFeedbackStatus(item.status));
-  const [adminCommentText, setAdminCommentText] = useState("");
-  const [postingComment, setPostingComment] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [sending, setSending] = useState(false);
   const [sentNote, setSentNote] = useState("");
-  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useEffect(() => {
     setStatus(normalizeFeedbackStatus(item.status));
@@ -162,278 +245,188 @@ function FeedbackCard({ item, updating, onUpdate, onAddComment }: FeedbackCardPr
   const statusCfg = getFeedbackStatusMeta(item.status);
   const TypeIcon = typeCfg.icon;
   const StatusIcon = statusCfg.icon;
+  const isSuggestion = item.main_category !== "feedback";
+  const comments = item.comments || [];
+  const replied = !!item.action_taken || comments.some((c) => c.is_admin);
+  const userName = item.user ? item.user.full_name || item.user.email : "Anonymous";
 
   const created = item.created_at_iso ? new Date(item.created_at_iso) : null;
-  let ageLabel = "Unknown";
-  let ageCls = "text-slate-500 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700";
+  let ageLabel = "";
+  let ageCls = "";
   if (created && !Number.isNaN(created.getTime())) {
-    const ageHours = (Date.now() - created.getTime()) / (1000 * 60 * 60);
+    const ageHours = (Date.now() - created.getTime()) / 36e5;
     if (ageHours < 24) {
-      ageLabel = "<24h";
-      ageCls = "text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800";
-    } else if (ageHours <= 72) {
-      ageLabel = "1-3d";
-      ageCls = "text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800";
+      ageLabel = "Today";
+      ageCls = "text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-900/30";
     } else {
-      ageLabel = ">3d";
-      ageCls = "text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-900/30 border-rose-200 dark:border-rose-800";
+      const days = Math.floor(ageHours / 24);
+      ageLabel = `${days}d old`;
+      ageCls =
+        days <= 3
+          ? "text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-900/30"
+          : "text-rose-700 bg-rose-50 dark:text-rose-300 dark:bg-rose-900/30";
     }
   }
 
-  const handleCommentSubmit = async () => {
-    if (!adminCommentText.trim()) return;
-    setPostingComment(true);
+  const sendReply = async () => {
+    const text = replyText.trim();
+    if (!text || sending) return;
+    setSending(true);
     try {
-      const emailedTo = await onAddComment(item.id, adminCommentText.trim());
-      setAdminCommentText("");
-      setSentNote(emailedTo ? `Sent · emailed ${emailedTo}` : "Sent (no email on file)");
+      const emailedTo = await onAddComment(item.id, text);
+      setReplyText("");
+      setSentNote(emailedTo ? `Sent and emailed to ${emailedTo}` : "Sent (user has no email on file)");
+    } catch {
+      // parent already alerted; keep the text so nothing is lost
     } finally {
-      setPostingComment(false);
+      setSending(false);
     }
   };
 
   return (
-    <Card
-      className={`p-4 sm:p-5 transition-all ${
-        item.status === "new"
-          ? "border-indigo-400 dark:border-indigo-500/40 shadow-sm"
-          : "border-slate-200/80 dark:border-white/[0.08]"
-      }`}
-    >
-      <div className="flex flex-col gap-4">
-        {/* Badges row: wraps on small screens so the text below gets full width */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span
-            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg border text-[11px] font-bold ${
-              item.main_category === "feedback"
-                ? "text-pink-700 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/40 border-pink-200 dark:border-pink-800"
-                : "text-amber-700 dark:text-yellow-400 bg-amber-50 dark:bg-yellow-950/40 border-amber-200 dark:border-yellow-800"
-            }`}
-          >
-            {item.main_category === "feedback" ? "Feedback" : "Suggestion"}
-          </span>
-          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[11px] font-semibold ${typeCfg.color}`}>
-            <TypeIcon className="w-3 h-3" />
-            {typeCfg.label}
-          </span>
-          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[11px] font-semibold ${statusCfg.badgeColor}`}>
-            <StatusIcon className="w-3 h-3" />
-            {statusCfg.label}
-          </span>
-          <span className={`text-[10px] px-2 py-0.5 rounded border font-medium ${ageCls}`}>{ageLabel}</span>
-        </div>
+    <Card className="p-0 overflow-hidden border-slate-200/80 dark:border-white/[0.08]">
+      <div className="flex">
+        {/* Status accent for quick scanning */}
+        <div className={`w-1 shrink-0 ${statusCfg.dot}`} aria-hidden />
 
-        <div className="flex flex-col gap-1 min-w-0">
-          <div className="min-w-0">
-              <h3 className="text-slate-900 dark:text-white font-bold text-[15px] sm:text-base leading-snug break-words">
-                {item.title}
-              </h3>
-              {item.body && (
-                <p className="text-slate-700 dark:text-slate-300 text-sm mt-1.5 leading-relaxed whitespace-pre-wrap break-words">
-                  {item.body}
-                </p>
-              )}
-
-              {item.attachment_url && (
-                <div className="mt-2.5">
-                  {isImageFile(item.attachment_name, item.attachment_type) ? (
-                    <div className="inline-block max-w-full">
-                      <div
-                        onClick={() => setLightboxOpen(true)}
-                        className="group relative cursor-pointer overflow-hidden rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-[#070a13] max-w-xs"
-                      >
-                        <img
-                          src={getAttachmentFullUrl(item.attachment_url)}
-                          alt={item.attachment_name || "Attachment"}
-                          className="max-h-36 w-full object-cover transition duration-200 group-hover:scale-[1.02]"
-                          loading="lazy"
-                        />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-semibold">
-                          <Maximize2 className="w-3.5 h-3.5" />
-                          <span>Enlarge</span>
-                        </div>
-                      </div>
-                      <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                        <ImageIcon className="w-3 h-3 text-indigo-500" />
-                        <span className="truncate max-w-[200px]">{item.attachment_name || "Image"}</span>
-                        {item.attachment_size ? <span>• {formatBytes(item.attachment_size)}</span> : null}
-                      </div>
-
-                      {/* Lightbox Modal */}
-                      {lightboxOpen && (
-                        <div
-                          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
-                          onClick={() => setLightboxOpen(false)}
-                        >
-                          <div
-                            className="relative max-w-4xl max-h-[90vh] flex flex-col items-center"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <div className="w-full flex items-center justify-between pb-3 text-white px-1">
-                              <span className="text-sm font-bold truncate max-w-[70vw]">
-                                {item.attachment_name || item.title}
-                              </span>
-                              <div className="flex items-center gap-3">
-                                <a
-                                  href={getAttachmentFullUrl(item.attachment_url)}
-                                  download={item.attachment_name || "attachment"}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition cursor-pointer flex items-center gap-1 text-xs"
-                                >
-                                  <Download className="w-3.5 h-3.5" />
-                                  <span>Download</span>
-                                </a>
-                                <button
-                                  onClick={() => setLightboxOpen(false)}
-                                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition cursor-pointer"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </div>
-                            <img
-                              src={getAttachmentFullUrl(item.attachment_url)}
-                              alt={item.title}
-                              className="max-h-[80vh] max-w-full rounded-2xl object-contain shadow-2xl border border-white/10"
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <a
-                      href={getAttachmentFullUrl(item.attachment_url)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      download={item.attachment_name || true}
-                      className="inline-flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 hover:border-indigo-400 dark:hover:border-indigo-500/40 text-xs font-semibold text-slate-800 dark:text-slate-200 transition group cursor-pointer"
-                    >
-                      <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
-                        <FileText className="w-4 h-4" />
-                      </div>
-                      <div className="flex flex-col text-left min-w-0">
-                        <span className="truncate max-w-[200px] sm:max-w-[260px] text-xs font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
-                          {item.attachment_name || "Attached Document"}
-                        </span>
-                        {item.attachment_size ? (
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">
-                            {formatBytes(item.attachment_size)}
-                          </span>
-                        ) : null}
-                      </div>
-                      <Download className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-500 shrink-0 ml-1" />
-                    </a>
-                  )}
-                </div>
-              )}
-              <div className="flex items-center gap-x-2 gap-y-1.5 mt-2.5 flex-wrap text-xs text-slate-500 dark:text-slate-400">
-                <span className="min-w-0 break-all">
-                  {item.user ? (
-                    <span>
-                      <span className="font-semibold text-slate-700 dark:text-slate-300">#{item.user.id}</span>{" "}
-                      {item.user.full_name || item.user.email}
-                    </span>
-                  ) : (
-                    "Anonymous"
-                  )}
-                </span>
-                <span aria-hidden>•</span>
-                <span className="whitespace-nowrap">{item.created_at}</span>
-                {item.agree_count && item.agree_count > 0 ? (
-                  <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded text-[11px] font-bold">
-                    <ThumbsUp className="w-3 h-3" /> {item.agree_count} agree
-                  </span>
-                ) : null}
-                {item.user?.id && (
-                  <Link
-                    href={`/users/${item.user.id}`}
-                    className="text-xs px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors inline-flex items-center gap-1 font-semibold"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                    Open user
-                  </Link>
-                )}
+        <div className="flex-1 min-w-0 p-4 sm:p-5 flex flex-col gap-4">
+          {/* Who + when */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 shrink-0 rounded-full bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 flex items-center justify-center text-xs font-bold">
+                {initials(item.user?.full_name || item.user?.email)}
               </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  {item.user?.id ? (
+                    <Link
+                      href={`/users/${item.user.id}`}
+                      className="font-semibold text-sm text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 truncate"
+                      title="Open user"
+                    >
+                      {userName}
+                    </Link>
+                  ) : (
+                    <span className="font-semibold text-sm text-slate-900 dark:text-white truncate">{userName}</span>
+                  )}
+                  {item.user?.id && <span className="text-xs text-slate-400 shrink-0">User #{item.user.id}</span>}
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-x-1.5">
+                  <span className="font-mono">Ticket #{item.id}</span>
+                  <span aria-hidden>·</span>
+                  <span>{item.created_at}</span>
+                </div>
+              </div>
+            </div>
+            {ageLabel && (
+              <span className={`shrink-0 text-[11px] px-2 py-0.5 rounded-full font-semibold ${ageCls}`}>{ageLabel}</span>
+            )}
           </div>
-        </div>
 
-        {/* Conversation: admin replies + community comments, plus the legacy official response */}
-        <div className="border-t border-slate-200/80 dark:border-white/[0.08] pt-4 mt-1 flex flex-col gap-3">
-          {(item.action_taken || (item.comments && item.comments.length > 0)) && (
-            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-              {item.action_taken && (
-                <div className="p-3 rounded-xl text-xs border bg-indigo-50/50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800/60">
-                  <span className="font-bold flex items-center gap-1 mb-1 text-indigo-600 dark:text-indigo-400">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Official response
-                  </span>
-                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed break-words whitespace-pre-wrap">{item.action_taken}</p>
-                </div>
+          {/* What */}
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-1.5 mb-2">
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-semibold ${statusCfg.badgeColor}`}>
+                <StatusIcon className="w-3 h-3" />
+                {statusCfg.label}
+              </span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md border text-[11px] font-semibold text-slate-600 bg-slate-50 border-slate-200 dark:text-slate-300 dark:bg-white/[0.04] dark:border-white/10">
+                {isSuggestion ? "Suggestion" : "Feedback"}
+              </span>
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-semibold ${typeCfg.color}`}>
+                <TypeIcon className="w-3 h-3" />
+                {typeCfg.label}
+              </span>
+              {!!item.agree_count && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-900/30">
+                  <ThumbsUp className="w-3 h-3" /> {item.agree_count} agree
+                </span>
               )}
-              {item.comments?.map((c) => (
-                <div
-                  key={c.id}
-                  className={`p-3 rounded-xl text-xs border ${
-                    c.is_admin
-                      ? "bg-indigo-50/50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800/60 ml-6"
-                      : "bg-white dark:bg-[#0d121f] border-slate-200/80 dark:border-white/[0.06] mr-6"
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className={`font-bold flex items-center gap-1 ${c.is_admin ? "text-indigo-600 dark:text-indigo-400" : "text-slate-800 dark:text-slate-200"}`}>
-                      {c.is_admin ? <ShieldCheck className="w-3.5 h-3.5" /> : <MessageSquare className="w-3.5 h-3.5" />}
-                      {c.author_name}
-                    </span>
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">{c.created_at}</span>
-                  </div>
-                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed break-words whitespace-pre-wrap">{c.comment}</p>
-                </div>
+              {!replied && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold text-rose-700 bg-rose-50 dark:text-rose-300 dark:bg-rose-900/30">
+                  Not replied
+                </span>
+              )}
+            </div>
+            <h3 className="text-slate-900 dark:text-white font-semibold text-base leading-snug break-words">{item.title}</h3>
+            {item.body && (
+              <p className="text-slate-600 dark:text-slate-300 text-sm mt-1 leading-relaxed whitespace-pre-wrap break-words">
+                {item.body}
+              </p>
+            )}
+            {item.attachment_url && (
+              <div className="mt-3">
+                <AttachmentPreview item={item} />
+              </div>
+            )}
+          </div>
+
+          {/* Conversation */}
+          {(item.action_taken || comments.length > 0) && (
+            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+              {item.action_taken && (
+                <ThreadMessage author="Official response" isAdmin text={item.action_taken} />
+              )}
+              {comments.map((c) => (
+                <ThreadMessage key={c.id} author={c.author_name} isAdmin={c.is_admin} text={c.comment} time={c.created_at} />
               ))}
             </div>
           )}
 
-          {/* Single reply box: saves the reply on the post and emails the user */}
-          <textarea
-            rows={2}
-            placeholder={item.user?.email ? `Reply to ${item.user.full_name || item.user.email}… (also emailed to them)` : "Reply…"}
-            value={adminCommentText}
-            onChange={(e) => setAdminCommentText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleCommentSubmit();
-            }}
-            className="w-full resize-y bg-slate-50 dark:bg-[#070a13] border border-slate-200 dark:border-white/[0.08] focus:border-indigo-500 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none transition-colors"
-          />
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <label className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Status</label>
-              <select
-                value={status}
-                disabled={updating}
-                onChange={(e) => {
-                  const next = e.target.value as FeedbackStatus;
-                  setStatus(next);
-                  onUpdate(item.id, next, item.action_taken || "");
-                }}
-                className="bg-slate-50 dark:bg-[#070a13] border border-slate-200 dark:border-white/[0.08] rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
-              >
-                {FEEDBACK_STATUSES.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.emoji} {s.label}
-                  </option>
-                ))}
-              </select>
-              {updating && <span className="text-[11px] text-slate-400">Saving…</span>}
-            </div>
-            <div className="flex items-center gap-2">
-              {sentNote && <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">{sentNote}</span>}
-              <button
-                onClick={handleCommentSubmit}
-                disabled={postingComment || !adminCommentText.trim()}
-                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs px-4 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition cursor-pointer"
-              >
-                <Send className="w-3 h-3" />
-                <span>{postingComment ? "Sending…" : "Send reply"}</span>
-              </button>
+          {/* One reply box: saved on the ticket and emailed to the user */}
+          <div className="rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50/60 dark:bg-white/[0.02] focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/15 transition">
+            <textarea
+              rows={2}
+              placeholder={item.user?.email ? `Reply to ${userName}…` : "Reply…"}
+              value={replyText}
+              onChange={(e) => {
+                setReplyText(e.target.value);
+                if (sentNote) setSentNote("");
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) sendReply();
+              }}
+              className="w-full resize-y bg-transparent px-3.5 pt-3 pb-1 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
+            />
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3 pb-2.5">
+              <div className="flex items-center gap-2">
+                <select
+                  value={status}
+                  disabled={updating}
+                  aria-label="Ticket status"
+                  onChange={(e) => {
+                    const next = e.target.value as FeedbackStatus;
+                    setStatus(next);
+                    onUpdate(item.id, next, item.action_taken || "");
+                  }}
+                  className="bg-white dark:bg-[#070a13] border border-slate-200 dark:border-white/[0.08] rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                >
+                  {FEEDBACK_STATUSES.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-[11px] text-slate-400 hidden sm:inline">
+                  {updating ? "Saving status…" : item.user?.email ? `Replies are emailed to ${item.user.email}` : "No email on file"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {sentNote && (
+                  <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> {sentNote}
+                  </span>
+                )}
+                <button
+                  onClick={sendReply}
+                  disabled={sending || !replyText.trim()}
+                  title="Send (Ctrl/Cmd + Enter)"
+                  className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs px-4 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  {sending ? "Sending…" : "Send reply"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -442,15 +435,42 @@ function FeedbackCard({ item, updating, onUpdate, onAddComment }: FeedbackCardPr
   );
 }
 
+function ThreadMessage({ author, isAdmin, text, time }: { author: string; isAdmin: boolean; text: string; time?: string }) {
+  return (
+    <div
+      className={`p-3 rounded-xl text-sm border ${
+        isAdmin
+          ? "bg-indigo-50/70 dark:bg-indigo-950/30 border-indigo-100 dark:border-indigo-800/50 ml-8"
+          : "bg-white dark:bg-[#0d121f] border-slate-200/80 dark:border-white/[0.06] mr-8"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <span className={`text-xs font-semibold flex items-center gap-1 ${isAdmin ? "text-indigo-700 dark:text-indigo-300" : "text-slate-700 dark:text-slate-200"}`}>
+          {isAdmin ? <ShieldCheck className="w-3.5 h-3.5" /> : <MessageSquare className="w-3.5 h-3.5" />}
+          {author}
+        </span>
+        {time && <span className="text-[11px] text-slate-400">{time}</span>}
+      </div>
+      <p className="text-slate-700 dark:text-slate-300 leading-relaxed break-words whitespace-pre-wrap">{text}</p>
+    </div>
+  );
+}
+
 const PAGE_SIZE = 20;
 
 // Under Review first: it's what needs triage.
-const STATUS_TABS: { key: string; label: string }[] = [
-  { key: "under_review", label: "🟡 Under Review" },
-  { key: "in_progress", label: "🔵 In Progress" },
-  { key: "on_hold", label: "⏸️ On Hold" },
-  { key: "live", label: "🟢 Live / Done" },
+const STATUS_TABS: { key: string; label: string; dot?: string }[] = [
+  { key: "under_review", label: "Under Review", dot: "bg-amber-500" },
+  { key: "in_progress", label: "In Progress", dot: "bg-blue-500" },
+  { key: "on_hold", label: "On Hold", dot: "bg-slate-400" },
+  { key: "live", label: "Live / Done", dot: "bg-emerald-500" },
   { key: "all", label: "All" },
+];
+
+const CHANNELS = [
+  { id: "all", label: "All" },
+  { id: "suggestion", label: "Suggestions" },
+  { id: "feedback", label: "Feedback" },
 ];
 
 const EMPTY_COUNTS: Record<string, number> = {
@@ -646,54 +666,52 @@ export default function FeedbackInbox() {
         </button>
       </div>
 
-      {/* Channel tabs (scroll sideways on small screens) */}
-      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {[
-          { id: "all", label: "All channels" },
-          { id: "suggestion", label: "💡 Suggestions" },
-          { id: "feedback", label: "💬 Feedback" },
-        ].map((ch) => (
-          <button
-            key={ch.id}
-            onClick={() => setChannelFilter(ch.id)}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
-              channelFilter === ch.id
-                ? "bg-indigo-600 text-white shadow-sm"
-                : "bg-slate-100 dark:bg-white/[0.04] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-            }`}
-          >
-            {ch.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Status tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border-b border-slate-200/80 dark:border-white/[0.08]">
-        {STATUS_TABS.map(({ key, label }) => {
-          const count = counts[key] || 0;
-          return (
-            <button
-              key={key}
-              onClick={() => setFilter(key)}
-              className={`shrink-0 mb-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
-                filter === key
-                  ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm"
-                  : "bg-white dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-              }`}
-            >
-              {label}
-              <span
-                className={`text-[10px] px-1.5 rounded-full font-bold ${
-                  filter === key
-                    ? "bg-indigo-600 text-white"
-                    : "bg-slate-100 dark:bg-white/[0.1] text-slate-600 dark:text-slate-300"
+      {/* Toolbar: status tabs (left) + channel switch (right) */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-white/[0.08] pb-3">
+        <div className="flex gap-1 overflow-x-auto -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist">
+          {STATUS_TABS.map(({ key, label, dot }) => {
+            const active = filter === key;
+            return (
+              <button
+                key={key}
+                role="tab"
+                aria-selected={active}
+                onClick={() => setFilter(key)}
+                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-2 cursor-pointer ${
+                  active
+                    ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
+                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
-                {count}
-              </span>
+                {dot && <span className={`w-2 h-2 rounded-full ${dot}`} aria-hidden />}
+                {label}
+                <span
+                  className={`text-[10px] min-w-5 px-1.5 py-px rounded-full font-bold tabular-nums ${
+                    active ? "bg-white/20 dark:bg-slate-900/10" : "bg-slate-100 dark:bg-white/[0.08] text-slate-500 dark:text-slate-300"
+                  }`}
+                >
+                  {counts[key] || 0}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="inline-flex self-start lg:self-auto p-0.5 rounded-lg bg-slate-100 dark:bg-white/[0.05]">
+          {CHANNELS.map((ch) => (
+            <button
+              key={ch.id}
+              onClick={() => setChannelFilter(ch.id)}
+              aria-pressed={channelFilter === ch.id}
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer ${
+                channelFilter === ch.id
+                  ? "bg-white dark:bg-[#1a2033] text-slate-900 dark:text-white shadow-sm"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              {ch.label}
             </button>
-          );
-        })}
+          ))}
+        </div>
       </div>
 
       {/* Feedback list */}
@@ -719,7 +737,7 @@ export default function FeedbackInbox() {
           />
         </Card>
       ) : (
-        <div className={`space-y-3.5 ${loading ? "opacity-60" : ""}`}>
+        <div className={`space-y-4 ${loading ? "opacity-60" : ""}`}>
           {items.map((item) => (
             <FeedbackCard
               key={item.id}
